@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 # Authors: Ryan Shim, Gilbert, Tomas
-
+import os
 import math
 import numpy
 import sys
@@ -46,7 +46,7 @@ MAX_GOAL_DISTANCE = math.sqrt(ARENA_LENGTH**2 + ARENA_WIDTH**2)
 class DRLEnvironment(Node):
     def __init__(self):
         super().__init__('drl_environment')
-        with open('/tmp/drlnav_current_stage.txt', 'r') as f:
+        with open(os.getenv('DRLNAV_BASE_PATH') +'/tmp/drlnav_current_stage.txt', 'r') as f:
             self.stage = int(f.read())
         print(f"running on stage: {self.stage}")
         self.episode_timeout = EPISODE_TIMEOUT_SECONDS

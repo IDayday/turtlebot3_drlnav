@@ -35,7 +35,7 @@ def generate_launch_description():
     launch_file_dir = os.path.join(get_package_share_directory('turtlebot3_gazebo'), 'launch')
     pkg_gazebo_ros = get_package_share_directory('gazebo_ros')
 
-    file = open('/tmp/drlnav_current_stage.txt', 'w')
+    file = open(os.getenv('DRLNAV_BASE_PATH') +'/tmp/drlnav_current_stage.txt', 'w')
     file.write("4\n")
     file.close()
 
