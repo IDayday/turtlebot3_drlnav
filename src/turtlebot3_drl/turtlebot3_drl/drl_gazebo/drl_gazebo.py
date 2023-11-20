@@ -183,10 +183,10 @@ class DRLGazebo(Node):
         tries = 0
 
         while ((abs(self.prev_x - self.goal_x) + abs(self.prev_y - self.goal_y)) < 0.01):
-            self.goal_x = 2.0
-            self.goal_y = 2.0
-            # self.goal_x = random.randrange(-70, 70) / 10.0   # random.randrange返回随机整数
-            # self.goal_y = random.randrange(-70, 70) / 10.0
+            # self.goal_x = 2.0
+            # self.goal_y = 1.1
+            self.goal_x = random.randrange(-65, 65) / 10.0   # random.randrange返回随机整数
+            self.goal_y = random.randrange(-65, 65) / 10.0
             # if self.stage == 11:
             #     # --- Define static goal positions here ---
             #     goal_pose_list = [[0.0, 0.0], [0.0, 6.5], [5.0, 5.5], [-2.5, -6.0], [3.0, -4.0], [6.0, -1.0]]

@@ -18,20 +18,20 @@ def get_reward_A(succeed, action_linear, action_angular, goal_dist, goal_angle, 
         r_distance = (2 * goal_dist_initial) / (goal_dist_initial + goal_dist) - 1
 
         # [-20, 0]
-        if min_obstacle_dist < 0.22:
+        if min_obstacle_dist < 0.25:
             r_obstacle = -20
         else:
             r_obstacle = 0
 
-        # [-2 * (2.2^2), 0]
-        r_vlinear = -1 * (((0.22 - action_linear) * 10) ** 2)
+        # [-2 * (2.5^2), 0]
+        r_vlinear = -1 * (((0.25 - action_linear) * 10) ** 2)
 
         reward = r_yaw + r_distance + r_obstacle + r_vlinear + r_vangular - 1
 
         if succeed == SUCCESS:
-            reward += 2500
+            reward += 5000
         elif succeed == COLLISION_OBSTACLE or succeed == COLLISION_WALL:
-            reward -= 2000
+            reward -= 4000
         return float(reward)
 
 # Define your own reward function by defining a new function: 'get_reward_X'

@@ -31,7 +31,7 @@ SPEED_LINEAR_MAX            = 1.5  # m/s 线速度最大值
 SPEED_ANGULAR_MAX           = 1.0   # rad/s 角速度最大值
 
 LIDAR_DISTANCE_CAP          = 3.5   # meters 雷达探测范围
-THRESHOLD_COLLISION         = 0.13  # meters 障碍物碰撞判定距离
+THRESHOLD_COLLISION         = 0.15  # meters 障碍物碰撞判定距离
 THREHSOLD_GOAL              = 0.20  # meters 目标抵达判定距离
 
 OBSTACLE_RADIUS             = 0.5  # meters 障碍物半径（圆柱体）
@@ -41,7 +41,7 @@ ENABLE_MOTOR_NOISE          = False # Add normally distributed noise to motor ou
 # --- REAL ROBOT ENVIRONMENT SETTINGS ---  真实物理环境参数
 REAL_TOPIC_SCAN  = 'scan'
 REAL_TOPIC_VELO  = 'cmd_vel'
-REAL_TOPIC_ODOM  = 'odom'
+REAL_TOPIC_ODOM  = 'odom_out'
 
 REAL_N_SCAN_SAMPLES         = 360    # LiDAR density count your robot is providing
 REAL_ARENA_LENGTH           = 50   # meters

@@ -59,6 +59,7 @@ class DRLEnvironment(Node):
         self.goal_x, self.goal_y = 0.0, 0.0
         self.robot_x, self.robot_y = 0.0, 0.0
         self.robot_x_prev, self.robot_y_prev = 0.0, 0.0
+        self.robot_x_tmp, self.robot_y_tmp = 0.0, 0.0
         self.robot_heading = 0.0
         self.total_distance = 0.0
         self.robot_tilt = 0.0
@@ -124,14 +125,18 @@ class DRLEnvironment(Node):
             obstacle_id = int(msg.child_frame_id[-1]) - 1
             diff_x = self.robot_x - robot_pos.x
             diff_y = self.robot_y - robot_pos.y
-            print("move distance", math.sqrt(diff_y**2 + diff_x**2))
+            # print("move distance", math.sqrt(diff_y**2 + diff_x**2))
             self.obstacle_distances[obstacle_id] = math.sqrt(diff_y**2 + diff_x**2)
         else:
             print("ERROR: received odom was not from obstacle!")
 
     def odom_callback(self, msg):
-        self.robot_x = msg.pose.pose.position.x
-        self.robot_y = msg.pose.pose.position.y
+        if self.succeed != 1:
+            self.robot_x = msg.pose.pose.position.x - self.robot_x_tmp
+            self.robot_y = msg.pose.pose.position.y - self.robot_y_tmp
+        else:
+            self.robot_x = msg.pose.pose.position.x
+            self.robot_y = msg.pose.pose.position.y
         _, _, self.robot_heading = util.euler_from_quaternion(msg.pose.pose.orientation)
         self.robot_tilt = msg.pose.pose.orientation.y
         # print("robot_tilt", self.robot_tilt)
@@ -156,9 +161,9 @@ class DRLEnvironment(Node):
             goal_angle += 2 * math.pi
 
         self.goal_distance = distance_to_goal
-        print("goal_x, goal_y", [self.goal_x, self.goal_y])
-        print("robot_x, robot_y", [self.robot_x, self.robot_y])
-        print("distance_to_goal", distance_to_goal)
+        # print("goal_x, goal_y", [self.goal_x, self.goal_y])
+        # print("robot_x, robot_y", [self.robot_x, self.robot_y])
+        # print("distance_to_goal", distance_to_goal)
         self.goal_angle = goal_angle
 
     # TODO: 传感器数据处理
@@ -197,8 +202,12 @@ class DRLEnvironment(Node):
         self.episode_deadline = Infinity
         self.done = True
         req = RingGoal.Request()
+        # TODO: 修正里程计
         req.robot_pose_x = self.robot_x
         req.robot_pose_y = self.robot_y
+        if success != 1:
+            self.robot_x_tmp += self.robot_x
+            self.robot_y_tmp += self.robot_y
         req.radius = numpy.clip(self.difficulty_radius, 0.5, 4)
         if success:
             self.difficulty_radius *= 1.01
@@ -229,8 +238,8 @@ class DRLEnvironment(Node):
         #       每次判定结果都是COLLISION_WALL
         # Collision
         elif self.obstacle_distance < THRESHOLD_COLLISION:
-            print("obstacle_distance",self.obstacle_distance)
-            print("THRESHOLD_COLLISION",THRESHOLD_COLLISION)
+            # print("obstacle_distance",self.obstacle_distance)
+            # print("THRESHOLD_COLLISION",THRESHOLD_COLLISION)
             dynamic_collision = False
             for obstacle_distance in self.obstacle_distances:
                 if obstacle_distance < (THRESHOLD_COLLISION + OBSTACLE_RADIUS + 0.05):
