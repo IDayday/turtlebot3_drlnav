@@ -156,23 +156,26 @@ class DRLEnvironment(Node):
             goal_angle += 2 * math.pi
 
         self.goal_distance = distance_to_goal
+        print("goal_x, goal_y", [self.goal_x, self.goal_y])
+        print("robot_x, robot_y", [self.robot_x, self.robot_y])
+        print("distance_to_goal", distance_to_goal)
         self.goal_angle = goal_angle
 
     # TODO: 传感器数据处理
     def scan_callback(self, msg):
         if len(msg.ranges) != NUM_SCAN_SAMPLES:
             print(f"more or less scans than expected! check model.sdf, got: {len(msg.ranges)}, expected: {NUM_SCAN_SAMPLES}")
-        # self.scan_ranges = [float('inf') if x<0.05 else x for x in self.scan_ranges]
-        print("scan_ranges", self.scan_ranges)
+        msg.ranges = [float('inf') if x<0.1 else x for x in msg.ranges]
+        # print("scan_ranges", self.scan_ranges)
         # normalize laser values
         self.obstacle_distance = 1
         for i in range(NUM_SCAN_SAMPLES):
                 self.scan_ranges[i] = numpy.clip(float(msg.ranges[i]) / LIDAR_DISTANCE_CAP, 0, 1)
                 if self.scan_ranges[i] < self.obstacle_distance:
                     self.obstacle_distance = self.scan_ranges[i]
-        print("min obstacle_distance", self.obstacle_distance)
+        # print("min obstacle_distance", self.obstacle_distance)
         self.obstacle_distance *= LIDAR_DISTANCE_CAP
-        print("scan call back obstacle_distance", self.obstacle_distance)
+        # print("scan call back obstacle_distance", self.obstacle_distance)
 
     def clock_callback(self, msg):
         self.time_sec = msg.clock.sec

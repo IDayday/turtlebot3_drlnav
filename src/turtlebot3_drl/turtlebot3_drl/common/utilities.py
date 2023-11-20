@@ -143,7 +143,8 @@ def get_scan_count():
     #     if link.get('name') == 'base_scan':
     #         return int(link.find('sensor').find('ray').find('scan').find('horizontal').find('samples').text)
 
-
+    # export DOG_BASE_PATH=/home/dayday/project/cyberdog_sim
+    # tree = ET.parse(os.getenv('DOG_BASE_PATH')+'/src/cyberdog_ros2/cyberdog_robot/cyberdog_description/xacro/gazebo.xacro')
     tree = ET.parse('/home/dayday/project/cyberdog_sim/src/cyberdog_ros2/cyberdog_robot/cyberdog_description/xacro/gazebo.xacro')
     root = tree.getroot()
     for link in root.findall('gazebo'):
