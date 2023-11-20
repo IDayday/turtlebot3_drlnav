@@ -87,10 +87,15 @@ class DDPG(OffPolicyAgent):
         if is_training:
             noise = torch.from_numpy(copy.deepcopy(self.noise.get_noise(step))).to(self.device)
             action = torch.clamp(torch.add(action, noise), -1.0, 1.0)
+            action[:2] = torch.clamp(action[:2], -0.2, 1.0)
         return action.detach().cpu().data.numpy().tolist()
 
     def get_action_random(self):
-        return [np.clip(np.random.uniform(-1.0, 1.0), -1.0, 1.0)] * self.action_size
+        random_x = np.random.uniform(-0.2, 1.0)
+        random_y = np.random.uniform(-0.2, 1.0)
+        random_yaw = np.random.uniform(-1.0, 1.0)
+        random_action = [random_x, random_y, random_yaw]
+        return random_action
 
     def train(self, state, action, reward, state_next, done):
         # optimize critic
