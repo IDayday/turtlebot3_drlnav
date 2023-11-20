@@ -51,7 +51,7 @@ class DRLGazebo(Node):
         self.entity = open(self.entity_path, 'r').read()
         self.entity_name = 'goal'
 
-        with open('/tmp/drlnav_current_stage.txt', 'r') as f:
+        with open(os.getenv('DRLNAV_BASE_PATH') + '/tmp/drlnav_current_stage.txt', 'r') as f:
             self.stage = int(f.read())
         print(f"running on stage: {self.stage}, dynamic goals enabled: {ENABLE_DYNAMIC_GOALS}")
 
