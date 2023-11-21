@@ -56,9 +56,8 @@ class Actor(nn.Module):
         log_prob = log_prob.sum(1, keepdim=True)
         return action, log_prob, mean, log_std
 
-    def get_conv_sizes(self, input_size):
-        #TODO: remove this
-        return []
+    # def get_conv_sizes(self, input_size):
+    #     return []
 
 class Critic(nn.Module):
 

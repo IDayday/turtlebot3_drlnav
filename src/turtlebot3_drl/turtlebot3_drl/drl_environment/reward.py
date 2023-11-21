@@ -36,7 +36,7 @@ def get_reward_A(succeed, action_linear, action_angular, goal_dist, goal_angle, 
 
 # Define your own reward function by defining a new function: 'get_reward_X'
 # Replace X with your reward function name and configure it in settings.py
-
+# TODO: 自定义奖励函数
 def get_reward_B(succeed, action_linear, action_angular, goal_dist, goal_angle, min_obstacle_dist):
 
 

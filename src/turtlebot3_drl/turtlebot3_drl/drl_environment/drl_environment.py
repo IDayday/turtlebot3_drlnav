@@ -234,8 +234,6 @@ class DRLEnvironment(Node):
         # Success
         if self.goal_distance < THREHSOLD_GOAL:
             self.succeed = SUCCESS
-        # TODO: 目前问题出在碰撞计算，数值不正常 THRESHOLD_COLLISION = 0.13 self.obstacle_distance = 0.01
-        #       每次判定结果都是COLLISION_WALL
         # Collision
         elif self.obstacle_distance < THRESHOLD_COLLISION:
             # print("obstacle_distance",self.obstacle_distance)
@@ -251,7 +249,6 @@ class DRLEnvironment(Node):
         # Timeout
         elif self.time_sec >= self.episode_deadline:
             self.succeed = TIMEOUT
-        # TODO：定义摔倒
         # Tumble
         elif self.robot_tilt > 0.06 or self.robot_tilt < -0.06:
             self.succeed = TUMBLE
