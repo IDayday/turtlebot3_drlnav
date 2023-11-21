@@ -129,12 +129,13 @@ class DrlAgent(Node):
 
             while not episode_done:
                 if self.training and self.total_steps < self.observe_steps:
-                    action = self.model.get_action_random()
-                elif self.training and (np.random.rand() < 0.2):
-                    action = self.model.get_action_random()
+                    action = self.model.get_action_random()                                    # x[-1.0,1.0]
                 else:
-                    action = self.model.get_action(state, self.training, step, ENABLE_VISUAL)
-                action_current = action
+                    action = self.model.get_action(state, self.training, step, ENABLE_VISUAL)  # x[-1,1]
+                action_env = copy.deepcopy(action)
+                action_env[0] = action_env[0]*(1.1/2) + (-0.1 + 1.0)/2                         # x[-0.1,1.0]
+                action_env[1] = action_env[1]*(1.1/2) + (-0.1 + 1.0)/2                         # x[-0.1,1.0]
+                action_current = action_env
                 if self.algorithm == 'dqn':
                     action_current = self.model.possible_actions[action]
 
@@ -151,7 +152,7 @@ class DrlAgent(Node):
                         next_state += frame_buffer[start : start + self.model.state_size]
 
                 # Train
-                if self.training == True:
+                if self.training == True and self.total_steps > self.observe_steps:
                     self.replay_buffer.add_sample(state, action, [reward], next_state, [episode_done])
                     if self.replay_buffer.get_length() >= self.model.batch_size:
                         loss_c, loss_a, = self.model._train(self.replay_buffer)

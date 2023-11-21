@@ -60,7 +60,7 @@ def get_reward_B(succeed, action_linear, action_angular, goal_dist, goal_angle, 
              reward -= 300
         return float(reward)
 
-def get_reward_C(succeed, action_linear, action_angular, goal_dist, goal_angle, min_obstacle_dist):
+def get_reward_C(succeed, action_linear_x, action_linear_y, action_angular, goal_dist, goal_angle, min_obstacle_dist):
         # [-3.14, 0]
         r_yaw = -1 * abs(goal_angle)
 
@@ -77,7 +77,7 @@ def get_reward_C(succeed, action_linear, action_angular, goal_dist, goal_angle, 
             r_obstacle = 0
 
 
-        r_vlinear = -1 * action_linear
+        r_vlinear = -1 * action_linear_x - 2*action_linear_y
 
         reward = 0.1*r_yaw + 0.5*r_distance + 0.3*r_obstacle + 0.01*r_vlinear + 0.19*r_vangular
 

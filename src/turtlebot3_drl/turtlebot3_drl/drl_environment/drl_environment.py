@@ -223,10 +223,10 @@ class DRLEnvironment(Node):
     # TODO: state
     def get_state(self, action_linear_previous, action_angular_previous):
         state = copy.deepcopy(self.scan_ranges)                                             # range: [ 0, 1]
-        # state.append(float(numpy.clip((self.goal_distance / MAX_GOAL_DISTANCE), 0, 1)))     # range: [ 0, 1]
-        # state.append(float(self.goal_angle) / math.pi)                                      # range: [-1, 1]
-        state.append(float(self.goal_x - self.robot_x))
-        state.append(float(self.goal_y - self.robot_y))
+        state.append(float(numpy.clip((self.goal_distance / MAX_GOAL_DISTANCE), 0, 1)))     # range: [ 0, 1]
+        state.append(float(self.goal_angle) / math.pi)                                      # range: [-1, 1]
+        # state.append(float(self.goal_x - self.robot_x))
+        # state.append(float(self.goal_y - self.robot_y))
         state.append(float(action_linear_previous[LINEAR_X]))                               # range: [-1, 1]
         state.append(float(action_linear_previous[LINEAR_Y]))                               # range: [-1, 1]
         state.append(float(action_angular_previous))                                        # range: [-1, 1]
@@ -289,7 +289,6 @@ class DRLEnvironment(Node):
         action_angular = request.action[ANGULAR] * SPEED_ANGULAR_MAX
 
         # Publish action cmd
-        print("random action", action_linear_x, action_linear_y, action_angular)
         twist = Twist()
         twist.linear.x = action_linear_x
         twist.linear.y = action_linear_y
@@ -302,7 +301,9 @@ class DRLEnvironment(Node):
         previous_action_Y = previous_action[LINEAR_Y]
         action_linear = math.sqrt(pow(action_linear_x,2)+pow(action_linear_y,2))
         response.state = self.get_state([previous_action_X,previous_action_Y], previous_action[ANGULAR])
-        response.reward = rw.get_reward(self.succeed, action_linear, action_angular, self.goal_distance,
+        # response.reward = rw.get_reward(self.succeed, action_linear, action_angular, self.goal_distance,
+        #                                     self.goal_angle, self.obstacle_distance)
+        response.reward = rw.get_reward(self.succeed, action_linear_x, action_linear_y, action_angular, self.goal_distance,
                                             self.goal_angle, self.obstacle_distance)
         response.done = self.done
         response.success = self.succeed
