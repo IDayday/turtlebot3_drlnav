@@ -50,20 +50,22 @@ class Critic(Network):
         super(Critic, self).__init__(name)
 
         # --- define layers here ---
-        self.l1 = nn.Linear(state_size, int(hidden_size / 2))
-        self.l2 = nn.Linear(action_size, int(hidden_size / 2))
-        self.l3 = nn.Linear(hidden_size, hidden_size)
-        self.l4 = nn.Linear(hidden_size, 1)
+        self.l1 = nn.Linear(state_size-5, int(hidden_size / 2))
+        self.l2 = nn.Linear(int(hidden_size / 2), 32)
+        self.l3 = nn.Linear(32+5+action_size, int(hidden_size / 2))
+        self.l4 = nn.Linear(int(hidden_size / 2), 1)
         # --- define layers until here ---
 
         self.apply(super().init_weights)
 
     def forward(self, states, actions):
         # --- define forward pass here ---
-        xs = torch.relu(self.l1(states))
-        xa = torch.relu(self.l2(actions))
-        x = torch.cat((xs, xa), dim=1)
-        x = torch.relu(self.l3(x))
+        scan = states[:,:-5]
+        other = states[:,-5:]
+        xs = torch.relu(self.l1(scan))
+        xss = torch.tanh(self.l2(xs))
+        concat = torch.cat([xss, other, actions], dim=-1)
+        x = torch.relu(self.l3(concat))
         x = self.l4(x)
         return x
 
@@ -87,19 +89,30 @@ class DDPG(OffPolicyAgent):
 
     def get_action(self, state, is_training, step, visualize=False):
         state = torch.from_numpy(np.asarray(state, np.float32)).to(self.device)
-        action = self.actor(state, visualize)
+        d = state.shape[-1]
+        states = state.reshape(-1,d)
+        action = self.actor(states, visualize).squeeze()
         if is_training:
             noise = torch.from_numpy(copy.deepcopy(self.noise.get_noise(step))).to(self.device)
             action = torch.clamp(torch.add(action, noise), -1.0, 1.0)
         return action.detach().cpu().data.numpy().tolist()
 
-    # TODO：随机动作
+    # TODO:随机动作
     def get_action_random(self):
         random_x = np.random.uniform(-1.0, 1.0)
         random_y = np.random.uniform(-1.0, 1.0)
         
         random_yaw = np.random.uniform(-1.0, 1.0)
         random_action = [random_x, random_y, random_yaw]
+
+        # action_list = [[0.5, 0.0, 0.0], [0.4, 0.2, 0.0], [0.2, 0.4, 0.0], [0.0, 0.5, 0.0], 
+        #                [0.4, -0.2, 0.0], [0.2, -0.4, 0.0], [0.0, -0.5, 0.0], 
+        #                [0.0, 0.0, -0.5], [0.0, 0.0, 0.5]]
+        # action_list = [[0.5, 0.0, 0.0], [0.4, 0.0, 0.0], [0.3, 0.0, 0.0], [0.2, 0.0, 0.0], 
+        #                [0.1, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.1], [0.0, 0.0, 0.2],
+        #                [0.0, 0.0, -0.1], [0.0, 0.0, -0.2]]
+        # num = len(action_list)
+        # random_action = action_list[np.random.randint(num)]
 
         # random_xy = [np.random.uniform(-0.2,1.0)]*2
         # if random_xy[0] > 0:

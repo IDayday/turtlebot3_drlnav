@@ -130,14 +130,10 @@ class DrlAgent(Node):
             while not episode_done:
                 if self.training and self.total_steps < self.observe_steps:
                     action = self.model.get_action_random()
-                    print("random action", action)
                 elif self.training and (np.random.rand() < 0.2):
                     action = self.model.get_action_random()
-                    print("random action", action)
                 else:
                     action = self.model.get_action(state, self.training, step, ENABLE_VISUAL)
-                    print("network action", action)
-                
                 action_current = action
                 if self.algorithm == 'dqn':
                     action_current = self.model.possible_actions[action]
