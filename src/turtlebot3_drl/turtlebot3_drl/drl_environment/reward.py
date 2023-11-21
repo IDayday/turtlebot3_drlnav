@@ -79,7 +79,7 @@ def get_reward_C(succeed, action_linear, action_angular, goal_dist, goal_angle, 
 
         r_vlinear = -1 * action_linear
 
-        reward = 0.1*r_yaw + 0.5*r_distance + 0.3*r_obstacle + 0.1*r_vlinear + 0.1*r_vangular
+        reward = 0.1*r_yaw + 0.5*r_distance + 0.3*r_obstacle + 0.01*r_vlinear + 0.19*r_vangular
 
         if succeed == SUCCESS:
             reward += 500

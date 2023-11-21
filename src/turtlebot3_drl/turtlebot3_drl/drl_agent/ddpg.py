@@ -95,11 +95,12 @@ class DDPG(OffPolicyAgent):
         if is_training:
             noise = torch.from_numpy(copy.deepcopy(self.noise.get_noise(step))).to(self.device)
             action = torch.clamp(torch.add(action, noise), -1.0, 1.0)
+            action[0] = torch.clamp(action[0], -0.1, 1.0)
         return action.detach().cpu().data.numpy().tolist()
 
     # TODO:随机动作
     def get_action_random(self):
-        random_x = np.random.uniform(-1.0, 1.0)
+        random_x = np.random.uniform(-0.1, 1.0)
         random_y = np.random.uniform(-1.0, 1.0)
         
         random_yaw = np.random.uniform(-1.0, 1.0)

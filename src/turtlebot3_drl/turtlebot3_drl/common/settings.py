@@ -17,7 +17,7 @@ GRAPH_AVERAGE_REWARD     = 10       # Average the reward graph over every N epis
 # ===================================================================== #
 
 # --- SIMULATION ENVIRONMENT SETTINGS ---
-REWARD_FUNCTION = "A"           # Defined in reward.py
+REWARD_FUNCTION = "C"           # Defined in reward.py
 EPISODE_TIMEOUT_SECONDS = 50    # Number of seconds after which episode timeout occurs
 
 TOPIC_SCAN = 'scan'
@@ -60,7 +60,6 @@ REAL_THRESHOLD_GOAL         = 0.20  # meters, minimum distance to goal that coun
 # ===================================================================== #
 
 # DRL parameters
-REWARD_FUNCTION = "B"       # Defined in reward.py
 ACTION_SIZE     = 3         # Not used for DQN, see DQN_ACTION_SIZE 三个动作 x方向线速度，y方向线速度,z轴旋转角速度
 HIDDEN_SIZE     = 512       # Number of neurons in hidden layers
 
@@ -70,7 +69,7 @@ DISCOUNT_FACTOR = 0.99
 LEARNING_RATE   = 0.003
 TAU             = 0.003
 
-OBSERVE_STEPS   = 10000     # At training start random actions are taken for N steps for better exploration
+OBSERVE_STEPS   = 5000     # At training start random actions are taken for N steps for better exploration
 STEP_TIME       = 0.1      # Delay between steps, can be set to 0  控制交互频率 初始100hz
 EPSILON_DECAY   = 0.9995    # Epsilon decay per step
 EPSILON_MINIMUM = 0.05
