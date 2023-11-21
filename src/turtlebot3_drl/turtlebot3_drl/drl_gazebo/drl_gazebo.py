@@ -57,6 +57,9 @@ class DRLGazebo(Node):
 
         self.prev_x, self.prev_y = -1, -1
         self.goal_x, self.goal_y = 0.5, 0.0
+        self.reset_env_times = 0
+        self.warm_times = 300
+        self.learning_times = 200
 
         """************************************************************
         ** Initialise ROS publishers, subscribers and clients
@@ -107,6 +110,7 @@ class DRLGazebo(Node):
         else:
             self.generate_goal_pose()
             print(f"success: generate a new goal, goal pose: {self.goal_x:.2f}, {self.goal_y:.2f}")
+        self.reset_env_times += 1
         return response
 
     def task_fail_callback(self, request, response):
@@ -121,12 +125,13 @@ class DRLGazebo(Node):
         else:
             self.generate_goal_pose()
             print(f"fail: reset the environment, goal pose: {self.goal_x:.2f}, {self.goal_y:.2f}")
+        self.reset_env_times += 1
         return response
 
     def goal_is_valid(self, goal_x, goal_y):
         # 这里判定是否合理的逻辑是：不在中心1/4区域内就不合理
-        if goal_x > ARENA_LENGTH/2 or goal_x < -ARENA_LENGTH/2 or goal_y > ARENA_WIDTH/2 or goal_y < -ARENA_WIDTH/2:
-            return False
+        # if goal_x > ARENA_LENGTH/2 or goal_x < -ARENA_LENGTH/2 or goal_y > ARENA_WIDTH/2 or goal_y < -ARENA_WIDTH/2:
+        #     return False
         
         # 和障碍物重叠就不合理
         for obstacle in self.obstacle_coordinates:
@@ -136,24 +141,63 @@ class DRLGazebo(Node):
         return True
 
     # 生成随机目标
+    # def generate_random_goal(self):
+    #     self.prev_x = self.goal_x
+    #     self.prev_y = self.goal_y
+    #     tries = 0
+    #     # 若生成的目标距离上次目标太近，或者不合理，就会重新生成
+    #     while (((abs(self.prev_x - self.goal_x) + abs(self.prev_y - self.goal_y)) < 4) or (not self.goal_is_valid(self.goal_x, self.goal_y))):
+    #         # 根据地图场地大小来调整
+    #         self.goal_x = random.randrange(-70, 70) / 10.0   # random.randrange返回随机整数
+    #         self.goal_y = random.randrange(-70, 70) / 10.0
+    #         tries += 1
+    #         if tries > 200:
+    #             print("ERROR: cannot find valid new goal, resestting!")
+    #             self.delete_entity()
+    #             self.reset_simulation()
+    #             self.generate_goal_pose()
+    #             break
+    #     self.publish_callback()
+
+    def random_goals(self):
+        if self.reset_env_times < self.warm_times:
+            goal_x = random.randrange(-20, 20) / 10.0   # random.randrange返回随机整数
+            goal_y = random.randrange(-20, 20) / 10.0
+        elif self.warm_times< self.reset_env_times < self.warm_times + self.learning_times :
+            goal_x = random.randrange(-30, 30) / 10.0   # random.randrange返回随机整数
+            goal_y = random.randrange(-30, 30) / 10.0
+        elif self.warm_times + self.learning_times< self.reset_env_times < self.warm_times + 2*self.learning_times:
+            goal_x = random.randrange(-40, 40) / 10.0   # random.randrange返回随机整数
+            goal_y = random.randrange(-40, 40) / 10.0
+        elif self.warm_times + 2*self.learning_times< self.reset_env_times < self.warm_times + 3*self.learning_times:
+            goal_x = random.randrange(-50, 50) / 10.0   # random.randrange返回随机整数
+            goal_y = random.randrange(-50, 50) / 10.0
+        elif self.warm_times + 3*self.learning_times< self.reset_env_times < self.warm_times + 4*self.learning_times:
+            goal_x = random.randrange(-60, 60) / 10.0   # random.randrange返回随机整数
+            goal_y = random.randrange(-60, 60) / 10.0
+        elif self.warm_times + 4*self.learning_times< self.reset_env_times:
+            goal_x = random.randrange(-65, 65) / 10.0   # random.randrange返回随机整数
+            goal_y = random.randrange(-65, 65) / 10.0
+        return goal_x , goal_y
+
+    # 生成随机目标
     def generate_random_goal(self):
         self.prev_x = self.goal_x
         self.prev_y = self.goal_y
         tries = 0
-        # 若生成的目标距离上次目标太近，或者不合理，就会重新生成
-        while (((abs(self.prev_x - self.goal_x) + abs(self.prev_y - self.goal_y)) < 4) or (not self.goal_is_valid(self.goal_x, self.goal_y))):
-            # 根据地图场地大小来调整
-            self.goal_x = random.randrange(-70, 70) / 10.0   # random.randrange返回随机整数
-            self.goal_y = random.randrange(-70, 70) / 10.0
-            tries += 1
-            if tries > 200:
-                print("ERROR: cannot find valid new goal, resestting!")
-                self.delete_entity()
-                self.reset_simulation()
-                self.generate_goal_pose()
-                break
+        self.goal_x , self.goal_y = self.random_goals()
+        while not self.goal_is_valid(self.goal_x, self.goal_y):
+            self.goal_x , self.goal_y = self.random_goals()
+        tries += 1
+        if tries > 200:
+            print("ERROR: cannot find valid new goal, resestting!")
+            self.delete_entity()
+            self.reset_simulation()
+            self.generate_goal_pose()
+
         self.publish_callback()
 
+    # 生成动态目标
     def generate_dynamic_goal_pose(self, robot_pose_x, robot_pose_y, radius):
         tries = 0
         while(True):
@@ -176,7 +220,7 @@ class DRLGazebo(Node):
             tries += 1
         self.publish_callback()
 
-
+    # TODO: 生成目标
     def generate_goal_pose(self):
         self.prev_x = self.goal_x
         self.prev_y = self.goal_y
@@ -185,8 +229,8 @@ class DRLGazebo(Node):
         while ((abs(self.prev_x - self.goal_x) + abs(self.prev_y - self.goal_y)) < 0.01):
             # self.goal_x = 2.0
             # self.goal_y = 1.1
-            self.goal_x = random.randrange(-65, 65) / 10.0   # random.randrange返回随机整数
-            self.goal_y = random.randrange(-65, 65) / 10.0
+            self.goal_x = random.randrange(-30, 30) / 10.0   # random.randrange返回随机整数
+            self.goal_y = random.randrange(-30, 30) / 10.0
             # if self.stage == 11:
             #     # --- Define static goal positions here ---
             #     goal_pose_list = [[0.0, 0.0], [0.0, 6.5], [5.0, 5.5], [-2.5, -6.0], [3.0, -4.0], [6.0, -1.0]]

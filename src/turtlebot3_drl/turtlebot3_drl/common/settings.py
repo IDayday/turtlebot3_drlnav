@@ -5,7 +5,7 @@
 ENABLE_BACKWARD          = False    # Enable backward movement of the robot
 ENABLE_STACKING          = False    # Enable processing multiple consecutive scan frames at every observation step
 ENABLE_VISUAL            = False    # Meant to be used only during evaluation/testing phase
-ENABLE_TRUE_RANDOM_GOALS = False    # If false, goals are selected semi-randomly from a list of known valid goal positions
+ENABLE_TRUE_RANDOM_GOALS = True    # If false, goals are selected semi-randomly from a list of known valid goal positions
 ENABLE_DYNAMIC_GOALS     = False    # If true, goal difficulty (distance) is adapted according to current success rate
 MODEL_STORE_INTERVAL     = 100      # Store the model weights every N episodes
 GRAPH_DRAW_INTERVAL      = 10       # Draw the graph every N episodes (drawing too often will slow down training)
@@ -32,11 +32,11 @@ SPEED_ANGULAR_MAX           = 1.0   # rad/s 角速度最大值
 
 LIDAR_DISTANCE_CAP          = 3.5   # meters 雷达探测范围
 THRESHOLD_COLLISION         = 0.15  # meters 障碍物碰撞判定距离
-THREHSOLD_GOAL              = 0.20  # meters 目标抵达判定距离
+THREHSOLD_GOAL              = 0.30  # meters 目标抵达判定距离
 
 OBSTACLE_RADIUS             = 0.5  # meters 障碍物半径（圆柱体）
 MAX_NUMBER_OBSTACLES        = 6     # 最多障碍物数量
-ENABLE_MOTOR_NOISE          = False # Add normally distributed noise to motor output to simulate hardware imperfections 电机噪声
+ENABLE_MOTOR_NOISE          = True # Add normally distributed noise to motor output to simulate hardware imperfections 电机噪声
 
 # --- REAL ROBOT ENVIRONMENT SETTINGS ---  真实物理环境参数
 REAL_TOPIC_SCAN  = 'scan'
@@ -60,18 +60,18 @@ REAL_THRESHOLD_GOAL         = 0.20  # meters, minimum distance to goal that coun
 # ===================================================================== #
 
 # DRL parameters
-REWARD_FUNCTION = "A"       # Defined in reward.py
+REWARD_FUNCTION = "B"       # Defined in reward.py
 ACTION_SIZE     = 3         # Not used for DQN, see DQN_ACTION_SIZE 三个动作 x方向线速度，y方向线速度,z轴旋转角速度
 HIDDEN_SIZE     = 512       # Number of neurons in hidden layers
 
-BATCH_SIZE      = 128       # Number of samples per training batch
+BATCH_SIZE      = 1024      # Number of samples per training batch
 BUFFER_SIZE     = 1000000   # Number of samples stored in replay buffer before FIFO
 DISCOUNT_FACTOR = 0.99
 LEARNING_RATE   = 0.003
 TAU             = 0.003
 
 OBSERVE_STEPS   = 25000     # At training start random actions are taken for N steps for better exploration
-STEP_TIME       = 0.01      # Delay between steps, can be set to 0
+STEP_TIME       = 0.1      # Delay between steps, can be set to 0  控制交互频率 初始100hz
 EPSILON_DECAY   = 0.9995    # Epsilon decay per step
 EPSILON_MINIMUM = 0.05
 

@@ -231,7 +231,7 @@ class SAC():
 
         self.soft_update(self.critic, self.target_critic, self.tau)
         return [loss_critic.detach().cpu(), actor_loss.detach().cpu()]
-        return [loss_critic.detach(), actor_loss.detach(), alpha_loss.detach()]
+        # return [loss_critic.detach(), actor_loss.detach(), alpha_loss.detach()]
 
     def hard_update(self, target, source):
         for target_param, param in zip(target.parameters(), source.parameters()):

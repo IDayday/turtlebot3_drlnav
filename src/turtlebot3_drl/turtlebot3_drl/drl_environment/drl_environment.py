@@ -277,7 +277,7 @@ class DRLEnvironment(Node):
         if ENABLE_MOTOR_NOISE:
             request.action[LINEAR_X] += numpy.clip(numpy.random.normal(0, 0.05), -0.1, 0.1)
             request.action[LINEAR_Y] += numpy.clip(numpy.random.normal(0, 0.05), -0.1, 0.1)
-            request.action[ANGULAR] += numpy.clip(numpy.random.normal(0, 0.05), -0.1, 0.1)
+            # request.action[ANGULAR] += numpy.clip(numpy.random.normal(0, 0.05), -0.1, 0.1)
 
         # Un-normalize actions
         if ENABLE_BACKWARD:

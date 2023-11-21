@@ -37,6 +37,29 @@ def get_reward_A(succeed, action_linear, action_angular, goal_dist, goal_angle, 
 # Define your own reward function by defining a new function: 'get_reward_X'
 # Replace X with your reward function name and configure it in settings.py
 
+def get_reward_B(succeed, action_linear, action_angular, goal_dist, goal_angle, min_obstacle_dist):
+
+
+        # [-1, 1]
+        r_distance = (2 * goal_dist_initial) / (goal_dist_initial + goal_dist) - 1
+
+        # [-20, 0]
+        if min_obstacle_dist < 0.25:
+            r_obstacle = -20
+        else:
+            r_obstacle = 0
+
+
+        reward = r_distance + r_obstacle
+
+        if succeed == SUCCESS:
+            reward += 2500
+        elif succeed == COLLISION_OBSTACLE or succeed == COLLISION_WALL:
+            reward -= 2000
+        elif succeed == TIMEOUT or succeed == TUMBLE:
+             reward -= 2000
+        return float(reward)
+
 def reward_initalize(init_distance_to_goal):
     global goal_dist_initial
     goal_dist_initial = init_distance_to_goal

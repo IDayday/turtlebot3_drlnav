@@ -22,18 +22,22 @@ class Actor(Network):
     def __init__(self, name, state_size, action_size, hidden_size):
         super(Actor, self).__init__(name)
         # --- define layers here ---
-        self.fa1 = nn.Linear(state_size, hidden_size)
-        self.fa2 = nn.Linear(hidden_size, hidden_size)
-        self.fa3 = nn.Linear(hidden_size, action_size)
+        self.fa1 = nn.Linear(state_size-5, hidden_size)
+        self.fa2 = nn.Linear(hidden_size, 32)
+        self.fa3 = nn.Linear(32+5, action_size)
         # --- define layers until here ---
 
         self.apply(super().init_weights)
 
+    # TODO: 输入预处理
     def forward(self, states, visualize=False):
         # --- define forward pass here ---
-        x1 = torch.relu(self.fa1(states))
-        x2 = torch.relu(self.fa2(x1))
-        action = torch.tanh(self.fa3(x2))
+        scan = states[:,:-5]
+        other = states[:,-5:]
+        x1 = torch.relu(self.fa1(scan))
+        x2 = torch.tanh(self.fa2(x1))
+        concat = torch.cat([x2, other],dim=-1)
+        action = torch.tanh(self.fa3(concat))
 
         # -- define layers to visualize here (optional) ---
         if visualize and self.visual:
@@ -87,14 +91,22 @@ class DDPG(OffPolicyAgent):
         if is_training:
             noise = torch.from_numpy(copy.deepcopy(self.noise.get_noise(step))).to(self.device)
             action = torch.clamp(torch.add(action, noise), -1.0, 1.0)
-            action[:2] = torch.clamp(action[:2], -0.2, 1.0)
         return action.detach().cpu().data.numpy().tolist()
 
     def get_action_random(self):
-        random_x = np.random.uniform(-0.2, 1.0)
-        random_y = np.random.uniform(-0.2, 1.0)
+        random_x = np.random.uniform(-1.0, 1.0)
+        random_y = np.random.uniform(-1.0, 1.0)
+        
         random_yaw = np.random.uniform(-1.0, 1.0)
         random_action = [random_x, random_y, random_yaw]
+
+        # random_xy = [np.random.uniform(-0.2,1.0)]*2
+        # if random_xy[0] > 0:
+        #     random_yaw = np.abs(random_yaw)
+        # else:
+        #     random_yaw = -np.abs(random_yaw)
+        # random_action = random_xy + [random_yaw]
+        # print(random_action)
         return random_action
 
     def train(self, state, action, reward, state_next, done):
