@@ -4,8 +4,8 @@ goal_dist_initial = 0
 
 reward_function_internal = None
 
-def get_reward(succeed, action_linear, action_angular, distance_to_goal, goal_angle, min_obstacle_distance):
-    return reward_function_internal(succeed, action_linear, action_angular, distance_to_goal, goal_angle, min_obstacle_distance)
+def get_reward(succeed, action_linear_x, action_linear_y, action_angular, distance_to_goal, goal_angle, min_obstacle_distance):
+    return reward_function_internal(succeed, action_linear_x, action_linear_y, action_angular, distance_to_goal, goal_angle, min_obstacle_distance)
 
 def get_reward_A(succeed, action_linear, action_angular, goal_dist, goal_angle, min_obstacle_dist):
         # [-3.14, 0]

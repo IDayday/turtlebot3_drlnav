@@ -134,7 +134,7 @@ class DrlAgent(Node):
                     action = self.model.get_action(state, self.training, step, ENABLE_VISUAL)  # x[-1,1]
                 action_env = copy.deepcopy(action)
                 action_env[0] = action_env[0]*(1.1/2) + (-0.1 + 1.0)/2                         # x[-0.1,1.0]
-                action_env[1] = action_env[1]*(1.1/2) + (-0.1 + 1.0)/2                         # x[-0.1,1.0]
+                action_env[1] = action_env[1]*(0.2/2)                                          # y[-0.1,0.1]
                 action_current = action_env
                 if self.algorithm == 'dqn':
                     action_current = self.model.possible_actions[action]
