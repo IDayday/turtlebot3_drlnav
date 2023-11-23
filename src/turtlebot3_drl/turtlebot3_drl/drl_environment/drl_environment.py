@@ -84,6 +84,8 @@ class DRLEnvironment(Node):
         self.local_step = 0
         self.time_sec = 0
 
+        self.state_tmp_list = [[], [], []]
+
         """************************************************************
         ** Initialise ROS publishers and subscribers
         ************************************************************"""
@@ -107,6 +109,9 @@ class DRLEnvironment(Node):
     """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
+    def state_queue(self, state):
+        self.state_tmp_list.append(state)
+        del self.state_tmp_list[0]
 
     def goal_pose_callback(self, msg):
         self.goal_x = msg.position.x
@@ -258,11 +263,14 @@ class DRLEnvironment(Node):
         if self.succeed is not UNKNOWN:
             print("succeed", self.succeed)
             self.stop_reset_robot(self.succeed == SUCCESS)
+        self.state_queue(state)
         return state
 
     def initalize_episode(self, response):
         self.initial_distance_to_goal = self.goal_distance
         response.state = self.get_state([0,0], 0)
+        for i in range(3):
+            self.state_queue(copy.deepcopy(response.state))
         response.reward = 0.0
         response.done = False
         response.distance_traveled = 0.0
@@ -303,7 +311,8 @@ class DRLEnvironment(Node):
         response.state = self.get_state([previous_action_X,previous_action_Y], previous_action[ANGULAR])
         # response.reward = rw.get_reward(self.succeed, action_linear, action_angular, self.goal_distance,
         #                                     self.goal_angle, self.obstacle_distance)
-        response.reward = rw.get_reward(self.succeed, action_linear_x, action_linear_y, action_angular, self.goal_distance,
+
+        response.reward = rw.get_reward(self.succeed, self.state_tmp_list, self.goal_distance,
                                             self.goal_angle, self.obstacle_distance)
         response.done = self.done
         response.success = self.succeed
