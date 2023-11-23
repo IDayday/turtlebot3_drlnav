@@ -35,9 +35,9 @@ from ..common.settings import ENABLE_BACKWARD, UNKNOWN, SUCCESS, COLLISION_WALL,
                                 REAL_SPEED_LINEAR_MAX, REAL_SPEED_ANGULAR_MAX, REAL_N_SCAN_SAMPLES, REAL_LIDAR_DISTANCE_CAP, REAL_LIDAR_CORRECTION, \
                                     REAL_THRESHOLD_COLLISION, REAL_THRESHOLD_GOAL, REAL_TOPIC_SCAN, REAL_TOPIC_VELO, REAL_TOPIC_ODOM
 
-LINEAR = 0
-ANGULAR = 1
-
+LINEAR_X = 0
+LINEAR_Y = 1
+ANGULAR = 2
 MAX_GOAL_DISTANCE = math.sqrt(REAL_ARENA_LENGTH**2 + REAL_ARENA_WIDTH**2)
 
 class DRLEnvironment(Node):
@@ -133,6 +133,7 @@ class DRLEnvironment(Node):
     def scan_callback(self, msg):
         if len(msg.ranges) != REAL_N_SCAN_SAMPLES:
             print(f"more or less scans than expected! check model.sdf, got: {len(msg.ranges)}, expected: {REAL_N_SCAN_SAMPLES}")
+        msg.ranges = [float('inf') if x<0.1 else x for x in msg.ranges]
         # normalize laser values
         self.obstacle_distance = 1
         for i in range(REAL_N_SCAN_SAMPLES):
@@ -150,8 +151,9 @@ class DRLEnvironment(Node):
         state = copy.deepcopy(self.scan_ranges)                                             # range: [ 0, 1]
         state.append(float(numpy.clip((self.goal_distance / MAX_GOAL_DISTANCE), 0, 1)))     # range: [ 0, 1]
         state.append(float(self.goal_angle) / math.pi)                                      # range: [-1, 1]
-        state.append(float(action_linear_previous))                                         # range: [-1, 1]
-        state.append(float(action_angular_previous))                                        # range: [-1, 1]
+        state.append(float(action_linear_previous[LINEAR_X]))                               # range: [-1, 1]
+        state.append(float(action_linear_previous[LINEAR_Y]))                               # range: [-1, 1]
+        state.append(float(action_angular_previous))                                         # range: [-1, 1]
         self.local_step += 1
 
         if self.local_step <= 15: # Grace period to wait for fresh sensor input
@@ -186,19 +188,25 @@ class DRLEnvironment(Node):
 
         # Unnormalize actions
         if ENABLE_BACKWARD:
-            action_linear = request.action[LINEAR] * REAL_SPEED_LINEAR_MAX
+            action_linear_x = request.action[LINEAR_X] * REAL_SPEED_LINEAR_MAX
+            action_linear_y = request.action[LINEAR_Y] * REAL_SPEED_LINEAR_MAX
         else:
-            action_linear = (request.action[LINEAR] + 1) / 2 * REAL_SPEED_LINEAR_MAX
+            action_linear_x = (request.action[LINEAR_X] + 1) / 2 * REAL_SPEED_LINEAR_MAX
+            action_linear_y = (request.action[LINEAR_Y] + 1) / 2 * REAL_SPEED_LINEAR_MAX
         action_angular = request.action[ANGULAR] * REAL_SPEED_ANGULAR_MAX
 
         # Publish action cmd
         twist = Twist()
-        twist.linear.x = action_linear
+        twist.linear.x = action_linear_x
+        twist.linear.y = action_linear_y
         twist.angular.z = action_angular
         self.cmd_vel_pub.publish(twist)
 
         # Prepare repsonse
-        response.state = self.get_state(request.previous_action[LINEAR], request.previous_action[ANGULAR])
+        previous_action = request.previous_action
+        previous_action_X = previous_action[LINEAR_X]
+        previous_action_Y = previous_action[LINEAR_Y]
+        response.state = self.get_state([previous_action_X,previous_action_Y], previous_action[ANGULAR])
         response.reward = 0.0
         response.done = self.done
         response.success = self.succeed
@@ -213,7 +221,7 @@ class DRLEnvironment(Node):
             self.done = False
         if self.local_step % 10 == 0:
             print(f"Rtot: {response.reward:<8.2f}GD: {self.goal_distance:<8.2f}GA: {math.degrees(self.goal_angle):.1f}°\t", end='')
-            print(f"MinD: {self.obstacle_distance:<8.2f}Alin: {request.action[LINEAR]:<7.1f}Aturn: {request.action[ANGULAR]:<7.1f}")
+            print(f"MinD: {self.obstacle_distance:<8.2f}AlinX: {request.action[LINEAR_X]:<7.1f}AlinY: {request.action[LINEAR_Y]:<7.1f}Aturn: {request.action[ANGULAR]:<7.1f}")
         return response
 
 def main(args=sys.argv[1:]):
