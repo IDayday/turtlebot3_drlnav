@@ -176,7 +176,7 @@ class DRLEnvironment(Node):
 
     def initalize_episode(self, response):
         self.initial_distance_to_goal = self.goal_distance
-        response.state = self.get_state(0, 0)
+        response.state = self.get_state([0, 0], 0)
         response.reward = 0.0
         response.done = False
         response.distance_traveled = 0.0
