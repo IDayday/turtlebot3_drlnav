@@ -21,6 +21,7 @@ import random
 import math
 import numpy
 import time
+import sys
 
 from gazebo_msgs.srv import DeleteEntity, SpawnEntity
 from std_srvs.srv import Empty
@@ -37,7 +38,7 @@ from ..common.settings import ENABLE_TRUE_RANDOM_GOALS
 
 NO_GOAL_SPAWN_MARGIN = 0.3 # meters away from any wall
 class DRLGazebo(Node):
-    def __init__(self):
+    def __init__(self, train):
         super().__init__('drl_gazebo')
 
         """************************************************************
@@ -50,6 +51,7 @@ class DRLGazebo(Node):
         self.entity_path = os.path.join(self.entity_dir_path, 'model.sdf')
         self.entity = open(self.entity_path, 'r').read()
         self.entity_name = 'goal'
+        self.train = train
 
         with open(os.getenv('DRLNAV_BASE_PATH') + '/tmp/drlnav_current_stage.txt', 'r') as f:
             self.stage = int(f.read())
@@ -185,7 +187,11 @@ class DRLGazebo(Node):
         self.prev_x = self.goal_x
         self.prev_y = self.goal_y
         tries = 0
-        self.goal_x , self.goal_y = self.random_goals()
+        if self.train:
+            self.goal_x , self.goal_y = self.random_goals()
+        else:
+            self.goal_x = random.randrange(-65, 65) / 10.0
+            self.goal_y = random.randrange(-65, 65) / 10.0
         while not self.goal_is_valid(self.goal_x, self.goal_y):
             self.goal_x , self.goal_y = self.random_goals()
         tries += 1
@@ -312,13 +318,26 @@ class DRLGazebo(Node):
         return obstacle_coordinates
 
 
-def main():
+def main(args=sys.argv[1:]):
     rclpy.init()
-    drl_gazebo = DRLGazebo()
+    if args[0] == "1":
+        train = True
+    elif args[0] == "0":
+        train = False
+    drl_gazebo = DRLGazebo(train)
     rclpy.spin(drl_gazebo)
 
     drl_gazebo.destroy()
     rclpy.shutdown()
+
+def main_test(args=sys.argv[1:]):
+    args = ['0'] + args
+    main(args)
+
+def main_train(args=sys.argv[1:]):
+    args = ['1'] + args
+    main(args)
+
 
 if __name__ == '__main__':
     main()
