@@ -130,7 +130,25 @@ class DRLEnvironment(Node):
         self.goal_distance = distance_to_goal
         self.goal_angle = goal_angle
 
-    def scan_callback(self, msg):
+    def filter_scan(self, real_scan):
+        length = len(real_scan)
+        outcome = real_scan
+        while length > 360:
+            del_num = length - 360
+            gap = length//del_num + 1
+            del_index = numpy.arange(0, length, gap)
+            outcome = numpy.delete(real_scan, del_index)
+            length = len(outcome)
+            real_scan = outcome
+        return outcome
+
+    def scan_callback(self, scan_msg):
+        # srange = numpy.array(scan_msg.ranges)
+        print(f"old: {len(scan_msg.ranges)}")
+        srange = self.filter_scan(numpy.array(scan_msg.ranges))
+        msg = LaserScan()
+        msg.ranges = [ float(x) for x in srange]
+        print(f"new: {len(msg.ranges)}")
         if len(msg.ranges) != REAL_N_SCAN_SAMPLES:
             print(f"more or less scans than expected! check model.sdf, got: {len(msg.ranges)}, expected: {REAL_N_SCAN_SAMPLES}")
         msg.ranges = [float('inf') if x<0.1 else x for x in msg.ranges]
@@ -141,6 +159,7 @@ class DRLEnvironment(Node):
                 if self.scan_ranges[i] < self.obstacle_distance:
                     self.obstacle_distance = self.scan_ranges[i]
         self.obstacle_distance *= REAL_LIDAR_DISTANCE_CAP
+
 
     def stop_reset_robot(self, success):
         self.cmd_vel_pub.publish(Twist()) # stop robot
@@ -176,7 +195,7 @@ class DRLEnvironment(Node):
 
     def initalize_episode(self, response):
         self.initial_distance_to_goal = self.goal_distance
-        response.state = self.get_state(0, 0)
+        response.state = self.get_state([0, 0], 0)
         response.reward = 0.0
         response.done = False
         response.distance_traveled = 0.0
@@ -224,13 +243,15 @@ class DRLEnvironment(Node):
             print(f"MinD: {self.obstacle_distance:<8.2f}AlinX: {request.action[LINEAR_X]:<7.1f}AlinY: {request.action[LINEAR_Y]:<7.1f}Aturn: {request.action[ANGULAR]:<7.1f}")
         return response
 
-def main(args=sys.argv[1:]):
+# def main(args=sys.argv[1:]):
+def main(args=None):
     rclpy.init(args=args)
-    if len(args) == 0:
-        drl_environment = DRLEnvironment()
-    else:
-        rclpy.shutdown()
-        quit("ERROR: wrong number of arguments!")
+    # if len(args) == 0:
+    #     drl_environment = DRLEnvironment()
+    # else:
+    #     rclpy.shutdown()
+    #     quit("ERROR: wrong number of arguments!")
+    drl_environment = DRLEnvironment()
     rclpy.spin(drl_environment)
     drl_environment.destroy()
     rclpy.shutdown()

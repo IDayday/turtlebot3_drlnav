@@ -213,9 +213,19 @@ def main_test(args=sys.argv[1:]):
     args = ['0'] + args
     main(args)
 
+# def main_real(args=sys.argv[1:]):
+#     # args = ['0'] + args + ['0']
+#     # main(args)
+
 def main_real(args=sys.argv[1:]):
-    args = ['0'] + args + ['0']
-    main(args)
+    # args = ['0'] + args + ['0']
+    # main(args)
+    rclpy.init(args=args[3:])
+    args_agent = ['0'] + args[0:3] + ['0']
+    drl_agent = DrlAgent(*args_agent)
+    rclpy.spin(drl_agent)
+    drl_agent.destroy()
+    rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
