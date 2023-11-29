@@ -129,6 +129,9 @@ class DRLEnvironment(Node):
 
         self.goal_distance = distance_to_goal
         self.goal_angle = goal_angle
+        print("goal_x, goal_y", [self.goal_x, self.goal_y])
+        print("robot_x, robot_y", [self.robot_x, self.robot_y])
+        print("distance_to_goal", distance_to_goal)
 
     def filter_scan(self, real_scan):
         length = len(real_scan)
@@ -144,11 +147,11 @@ class DRLEnvironment(Node):
 
     def scan_callback(self, scan_msg):
         # srange = numpy.array(scan_msg.ranges)
-        print(f"old: {len(scan_msg.ranges)}")
+       # print(f"old: {len(scan_msg.ranges)}")
         srange = self.filter_scan(numpy.array(scan_msg.ranges))
         msg = LaserScan()
         msg.ranges = [ float(x) for x in srange]
-        print(f"new: {len(msg.ranges)}")
+       # print(f"new: {len(msg.ranges)}")
         if len(msg.ranges) != REAL_N_SCAN_SAMPLES:
             print(f"more or less scans than expected! check model.sdf, got: {len(msg.ranges)}, expected: {REAL_N_SCAN_SAMPLES}")
         msg.ranges = [float('inf') if x<0.1 else x for x in msg.ranges]
@@ -181,16 +184,16 @@ class DRLEnvironment(Node):
         if self.goal_distance < REAL_THRESHOLD_GOAL:
             print("Outcome: Goal reached! :)")
             self.succeed = SUCCESS
-        # Collision
-        elif self.obstacle_distance < REAL_THRESHOLD_COLLISION:
-            print("Collision! (wall) :(")
-            self.succeed = COLLISION_WALL
-        # Timeout
-        # elif self.time_sec >= self.episode_deadline:
-        #     print("Outcome: Time out! :(")
-        #     self.succeed = TIMEOUT
-        if self.succeed is not UNKNOWN:
-            self.stop_reset_robot(self.succeed == SUCCESS)
+       # # Collision
+       # elif self.obstacle_distance < REAL_THRESHOLD_COLLISION:
+       #     print("Collision! (wall) :(")
+       #     self.succeed = COLLISION_WALL
+       # # Timeout
+       # # elif self.time_sec >= self.episode_deadline:
+       # #     print("Outcome: Time out! :(")
+       # #     self.succeed = TIMEOUT
+       # if self.succeed is not UNKNOWN:
+       #     self.stop_reset_robot(self.succeed == SUCCESS)
         return state
 
     def initalize_episode(self, response):

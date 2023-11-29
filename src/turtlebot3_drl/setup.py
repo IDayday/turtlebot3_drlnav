@@ -47,7 +47,7 @@ setup(
             'gazebo_goals = turtlebot3_drl.drl_gazebo.drl_gazebo:main',
             'train_agent = turtlebot3_drl.drl_agent.drl_agent:main_train',
             'test_agent = turtlebot3_drl.drl_agent.drl_agent:main_test',
-            'real_agent = turtlebot3_drl.drl_agent.drl_agent:main_real',
+            'real_agent = turtlebot3_drl.drl_agent.drl_agent_real:main_real',
         ],
     },
 )
