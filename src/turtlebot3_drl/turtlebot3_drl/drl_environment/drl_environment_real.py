@@ -129,8 +129,29 @@ class DRLEnvironment(Node):
 
         self.goal_distance = distance_to_goal
         self.goal_angle = goal_angle
+        print("goal_x, goal_y", [self.goal_x, self.goal_y])
+        print("robot_x, robot_y", [self.robot_x, self.robot_y])
+        print("distance_to_goal", distance_to_goal)
 
-    def scan_callback(self, msg):
+    def filter_scan(self, real_scan):
+        length = len(real_scan)
+        outcome = real_scan
+        while length > 360:
+            del_num = length - 360
+            gap = length//del_num + 1
+            del_index = numpy.arange(0, length, gap)
+            outcome = numpy.delete(real_scan, del_index)
+            length = len(outcome)
+            real_scan = outcome
+        return outcome
+
+    def scan_callback(self, scan_msg):
+        # srange = numpy.array(scan_msg.ranges)
+       # print(f"old: {len(scan_msg.ranges)}")
+        srange = self.filter_scan(numpy.array(scan_msg.ranges))
+        msg = LaserScan()
+        msg.ranges = [ float(x) for x in srange]
+       # print(f"new: {len(msg.ranges)}")
         if len(msg.ranges) != REAL_N_SCAN_SAMPLES:
             print(f"more or less scans than expected! check model.sdf, got: {len(msg.ranges)}, expected: {REAL_N_SCAN_SAMPLES}")
         msg.ranges = [float('inf') if x<0.1 else x for x in msg.ranges]
@@ -141,6 +162,7 @@ class DRLEnvironment(Node):
                 if self.scan_ranges[i] < self.obstacle_distance:
                     self.obstacle_distance = self.scan_ranges[i]
         self.obstacle_distance *= REAL_LIDAR_DISTANCE_CAP
+
 
     def stop_reset_robot(self, success):
         self.cmd_vel_pub.publish(Twist()) # stop robot
@@ -162,16 +184,16 @@ class DRLEnvironment(Node):
         if self.goal_distance < REAL_THRESHOLD_GOAL:
             print("Outcome: Goal reached! :)")
             self.succeed = SUCCESS
-        # Collision
-        elif self.obstacle_distance < REAL_THRESHOLD_COLLISION:
-            print("Collision! (wall) :(")
-            self.succeed = COLLISION_WALL
-        # Timeout
-        # elif self.time_sec >= self.episode_deadline:
-        #     print("Outcome: Time out! :(")
-        #     self.succeed = TIMEOUT
-        if self.succeed is not UNKNOWN:
-            self.stop_reset_robot(self.succeed == SUCCESS)
+       # # Collision
+       # elif self.obstacle_distance < REAL_THRESHOLD_COLLISION:
+       #     print("Collision! (wall) :(")
+       #     self.succeed = COLLISION_WALL
+       # # Timeout
+       # # elif self.time_sec >= self.episode_deadline:
+       # #     print("Outcome: Time out! :(")
+       # #     self.succeed = TIMEOUT
+       # if self.succeed is not UNKNOWN:
+       #     self.stop_reset_robot(self.succeed == SUCCESS)
         return state
 
     def initalize_episode(self, response):
@@ -224,13 +246,15 @@ class DRLEnvironment(Node):
             print(f"MinD: {self.obstacle_distance:<8.2f}AlinX: {request.action[LINEAR_X]:<7.1f}AlinY: {request.action[LINEAR_Y]:<7.1f}Aturn: {request.action[ANGULAR]:<7.1f}")
         return response
 
-def main(args=sys.argv[1:]):
+# def main(args=sys.argv[1:]):
+def main(args=None):
     rclpy.init(args=args)
-    if len(args) == 0:
-        drl_environment = DRLEnvironment()
-    else:
-        rclpy.shutdown()
-        quit("ERROR: wrong number of arguments!")
+    # if len(args) == 0:
+    #     drl_environment = DRLEnvironment()
+    # else:
+    #     rclpy.shutdown()
+    #     quit("ERROR: wrong number of arguments!")
+    drl_environment = DRLEnvironment()
     rclpy.spin(drl_environment)
     drl_environment.destroy()
     rclpy.shutdown()

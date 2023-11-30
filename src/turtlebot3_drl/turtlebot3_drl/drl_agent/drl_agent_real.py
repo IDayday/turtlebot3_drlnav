@@ -105,7 +105,7 @@ class DrlAgent(Node):
             self.gazebo_pause = self.create_client(Empty, '/pause_physics')
             self.gazebo_unpause = self.create_client(Empty, '/unpause_physics')
         if self.training:
-            episode_num = 2000
+            episode_num = 4000
         else:
             episode_num = 100
         self.process(episode_num)
