@@ -26,7 +26,7 @@ def main(args):
     plt.figure(figsize=(16,10))
     j = 0
     base_path = os.getenv('DRLNAV_BASE_PATH') + f"/src/{args.agent_name}/model/{args.file_path}/"
-    logfile = glob.glob(base_path + '/_train_*.txt')
+    logfile = glob.glob(base_path + '/_train_l*.txt')
     if len(logfile) != 1:
         print(f"ERROR: found less or more than 1 logfile for: {base_path}")
     df = pd.read_csv(logfile[0])

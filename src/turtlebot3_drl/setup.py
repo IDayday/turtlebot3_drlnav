@@ -44,7 +44,8 @@ setup(
         'console_scripts': [
             'environment = turtlebot3_drl.drl_environment.drl_environment:main',
             'real_environment = turtlebot3_drl.drl_environment.drl_environment_real:main',
-            'gazebo_goals = turtlebot3_drl.drl_gazebo.drl_gazebo:main',
+            'gazebo_goals_train = turtlebot3_drl.drl_gazebo.drl_gazebo:main_train',
+            'gazebo_goals_test = turtlebot3_drl.drl_gazebo.drl_gazebo:main_test',
             'train_agent = turtlebot3_drl.drl_agent.drl_agent:main_train',
             'test_agent = turtlebot3_drl.drl_agent.drl_agent:main_test',
             'real_agent = turtlebot3_drl.drl_agent.drl_agent_real:main_real',
