@@ -26,6 +26,7 @@ import torch
 from ..common.settings import ENABLE_VISUAL, ENABLE_STACKING, OBSERVE_STEPS, MODEL_STORE_INTERVAL, GRAPH_DRAW_INTERVAL
 
 from ..common.storagemanager import StorageManager
+from ..common.graph import Graph
 from ..common.logger import Logger
 if ENABLE_VISUAL:
     from ..common.visual import DrlVisual
@@ -69,7 +70,7 @@ class DrlAgent(Node):
             quit("\033[1m" + "\033[93m" + f"invalid algorithm specified ({self.algorithm}), choose one of: dqn, ddpg, td3" + "\033[0m}")
 
         self.replay_buffer = ReplayBuffer(self.model.buffer_size)
-
+        self.graph = Graph()
         # ===================================================================== #
         #                             Model loading                             #
         # ===================================================================== #
@@ -82,12 +83,14 @@ class DrlAgent(Node):
             self.sm.load_weights(self.model.networks)
             if self.training:
                 self.replay_buffer.buffer = self.sm.load_replay_buffer(self.model.buffer_size, os.path.join(self.load_session, 'stage'+str(self.sm.stage)+'_latest_buffer.pkl'))
+            self.total_steps = self.graph.set_graphdata(self.sm.load_graphdata(), self.episode)
             print(f"global steps: {self.total_steps}")
             print(f"loaded model {self.load_session} (eps {self.episode}): {self.model.get_model_parameters()}")
         else:
             self.sm.new_session_dir(util.stage)
             self.sm.store_model(self.model)
 
+        self.graph.session_dir = self.sm.session_dir
         self.logger = Logger(self.training, self.sm.machine_dir, self.sm.session_dir, self.sm.session, self.model.get_model_parameters(), self.model.get_model_configuration(), str(util.stage), self.algorithm, self.episode)
         if ENABLE_VISUAL:
             self.visual = DrlVisual(self.model.state_size, self.model.hidden_size)
