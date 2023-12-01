@@ -251,7 +251,7 @@ class DRLEnvironment(Node):
             return state
         # Success
         # TODO: 增加成功判定
-        if self.goal_distance < THREHSOLD_GOAL and math.sqrt(pow(v_x,2)+pow(v_y,2))<0.1 and abs(v_w)<0.05:
+        if self.goal_distance < THREHSOLD_GOAL and math.sqrt(pow(v_x,2)+pow(v_y,2))<=0.2:
             self.succeed = SUCCESS
         # Collision
         elif self.obstacle_distance < THRESHOLD_COLLISION:
@@ -298,14 +298,19 @@ class DRLEnvironment(Node):
             request.action[LINEAR_Y] += np.clip(np.random.normal(0, 0.05), -0.1, 0.1)
             # request.action[ANGULAR] += numpy.clip(numpy.random.normal(0, 0.05), -0.1, 0.1)
 
+        SPEED_LINEAR_MAX_X = 0.187*(self.goal_distance - 0.5) + 0.1
+
         # Un-normalize actions
         if ENABLE_BACKWARD:
-            action_linear_x = request.action[LINEAR_X] * SPEED_LINEAR_MAX
-            action_linear_y = request.action[LINEAR_Y] * SPEED_LINEAR_MAX
+            if self.obstacle_distance < 1:
+                action_linear_x = request.action[LINEAR_X] * 0.5
+            else:
+                action_linear_x = request.action[LINEAR_X] * SPEED_LINEAR_MAX_X
         else:
             action_linear_x = (request.action[LINEAR_X] + 1) / 2 * SPEED_LINEAR_MAX
             action_linear_y = (request.action[LINEAR_Y] + 1) / 2 * SPEED_LINEAR_MAX
-        action_angular = request.action[ANGULAR] * SPEED_ANGULAR_MAX
+        action_linear_y = request.action[LINEAR_Y] * 0.1
+        action_angular = request.action[ANGULAR] * 0.5
 
         # Publish action cmd
         twist = Twist()
