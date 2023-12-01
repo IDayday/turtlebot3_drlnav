@@ -239,6 +239,9 @@ class DRLEnvironment(Node):
         state.append(float(self.goal_angle) / math.pi)                                      # range: [-1, 1]
         # state.append(float(self.goal_x - self.robot_x))
         # state.append(float(self.goal_y - self.robot_y))
+        v_x = float(action_linear_previous[LINEAR_X])
+        v_y = float(action_linear_previous[LINEAR_Y])
+        v_w = float(action_angular_previous)
         state.append(float(action_linear_previous[LINEAR_X]))                               # range: [-1, 1]
         state.append(float(action_linear_previous[LINEAR_Y]))                               # range: [-1, 1]
         state.append(float(action_angular_previous))                                        # range: [-1, 1]
@@ -247,7 +250,8 @@ class DRLEnvironment(Node):
         if self.local_step <= 30: # Grace period to wait for simulation reset
             return state
         # Success
-        if self.goal_distance < THREHSOLD_GOAL:
+        # TODO: 增加成功判定
+        if self.goal_distance < THREHSOLD_GOAL and math.sqrt(pow(v_x,2)+pow(v_y,2))<0.1 and abs(v_w)<0.05:
             self.succeed = SUCCESS
         # Collision
         elif self.obstacle_distance < THRESHOLD_COLLISION:
