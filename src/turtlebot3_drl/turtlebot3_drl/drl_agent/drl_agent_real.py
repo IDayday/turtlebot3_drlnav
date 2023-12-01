@@ -73,7 +73,7 @@ class DrlAgent(Node):
         # ===================================================================== #
         #                             Model loading                             #
         # ===================================================================== #
-        self.model.actor.load_state_dict(torch.load("/home/mi/turtlebot3_drlnav/src/cyberdog_drl/model/mi-desktop/ddpg_1_stage_4/actor_stage4_episode5900.pt",map_location="cuda"))
+        self.model.actor.load_state_dict(torch.load("/home/mi/turtlebot3_drlnav/src/cyberdog_drl/model/mi-desktop/ddpg_1_stage_4/actor_stage4_episode2700.pt",map_location="cuda"))
 
 
         # self.sm = StorageManager(self.algorithm, self.load_session, self.episode, self.device, util.stage)

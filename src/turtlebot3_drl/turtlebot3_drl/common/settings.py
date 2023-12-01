@@ -46,8 +46,8 @@ REAL_TOPIC_ODOM  = 'odom_out'
 REAL_N_SCAN_SAMPLES         = 360    # LiDAR density count your robot is providing
 REAL_ARENA_LENGTH           = 50   # meters
 REAL_ARENA_WIDTH            = 50   # meters
-REAL_SPEED_LINEAR_MAX       = 0.5  # in m/s
-REAL_SPEED_ANGULAR_MAX      = 0.5   # in rad/s
+REAL_SPEED_LINEAR_MAX       = 1.5  # in m/s
+REAL_SPEED_ANGULAR_MAX      = 1.5   # in rad/s
 
 REAL_LIDAR_CORRECTION       = 0.40  # meters, subtracted from the real LiDAR values 激光雷达盲区？修正值？
 REAL_LIDAR_DISTANCE_CAP     = 3.5   # meters, scan distances are capped this value

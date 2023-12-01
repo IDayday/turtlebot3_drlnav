@@ -129,9 +129,10 @@ class DRLEnvironment(Node):
 
         self.goal_distance = distance_to_goal
         self.goal_angle = goal_angle
-        print("goal_x, goal_y", [self.goal_x, self.goal_y])
-        print("robot_x, robot_y", [self.robot_x, self.robot_y])
-        print("distance_to_goal", distance_to_goal)
+        print("goal_x, goal_y, robot_x, robot_y, distance_to_goal", [self.goal_x, self.goal_y], [self.robot_x, self.robot_y], distance_to_goal)
+        # print("goal_x, goal_y", [self.goal_x, self.goal_y])
+        # print("robot_x, robot_y", [self.robot_x, self.robot_y])
+        # print("distance_to_goal", distance_to_goal)
 
     def filter_scan(self, real_scan):
         length = len(real_scan)
@@ -184,16 +185,16 @@ class DRLEnvironment(Node):
         if self.goal_distance < REAL_THRESHOLD_GOAL:
             print("Outcome: Goal reached! :)")
             self.succeed = SUCCESS
-       # # Collision
-       # elif self.obstacle_distance < REAL_THRESHOLD_COLLISION:
-       #     print("Collision! (wall) :(")
-       #     self.succeed = COLLISION_WALL
-       # # Timeout
-       # # elif self.time_sec >= self.episode_deadline:
-       # #     print("Outcome: Time out! :(")
-       # #     self.succeed = TIMEOUT
-       # if self.succeed is not UNKNOWN:
-       #     self.stop_reset_robot(self.succeed == SUCCESS)
+       # Collision
+        elif self.obstacle_distance < REAL_THRESHOLD_COLLISION:
+           print("Collision! (wall) :(")
+           self.succeed = COLLISION_WALL
+       # Timeout
+       # elif self.time_sec >= self.episode_deadline:
+       #     print("Outcome: Time out! :(")
+       #     self.succeed = TIMEOUT
+        if self.succeed is not UNKNOWN:
+           self.stop_reset_robot(self.succeed == SUCCESS)
         return state
 
     def initalize_episode(self, response):
