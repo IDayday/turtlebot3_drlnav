@@ -21,6 +21,7 @@ import os
 import sys
 import time
 import numpy as np
+import torch
 
 from ..common.settings import ENABLE_VISUAL, ENABLE_STACKING, OBSERVE_STEPS, MODEL_STORE_INTERVAL, GRAPH_DRAW_INTERVAL
 
@@ -67,30 +68,33 @@ class DrlAgent(Node):
         else:
             quit("\033[1m" + "\033[93m" + f"invalid algorithm specified ({self.algorithm}), choose one of: dqn, ddpg, td3" + "\033[0m}")
 
-        self.replay_buffer = ReplayBuffer(self.model.buffer_size)
+        # self.replay_buffer = ReplayBuffer(self.model.buffer_size)
 
         # ===================================================================== #
         #                             Model loading                             #
         # ===================================================================== #
-        self.sm = StorageManager(self.algorithm, self.load_session, self.episode, self.device, util.stage)
+        self.model.actor.load_state_dict(torch.load("/home/mi/turtlebot3_drlnav/src/cyberdog_drl/model/mi-desktop/ddpg_1_stage_4/actor_stage4_episode5900.pt",map_location="cuda"))
 
-        if self.load_session:
-            del self.model
-            self.model = self.sm.load_model()
-            self.model.device = self.device
-            self.sm.load_weights(self.model.networks)
-            if self.training:
-                self.replay_buffer.buffer = self.sm.load_replay_buffer(self.model.buffer_size, os.path.join(self.load_session, 'stage'+str(self.sm.stage)+'_latest_buffer.pkl'))
-            print(f"global steps: {self.total_steps}")
-            print(f"loaded model {self.load_session} (eps {self.episode}): {self.model.get_model_parameters()}")
-        else:
-            self.sm.new_session_dir(util.stage)
-            self.sm.store_model(self.model)
 
-        self.logger = Logger(self.training, self.sm.machine_dir, self.sm.session_dir, self.sm.session, self.model.get_model_parameters(), self.model.get_model_configuration(), str(util.stage), self.algorithm, self.episode)
-        if ENABLE_VISUAL:
-            self.visual = DrlVisual(self.model.state_size, self.model.hidden_size)
-            self.model.attach_visual(self.visual)
+        # self.sm = StorageManager(self.algorithm, self.load_session, self.episode, self.device, util.stage)
+
+        # if self.load_session:
+        #     del self.model
+        #     self.model = self.sm.load_model()
+        #     self.model.device = self.device
+        #     self.sm.load_weights(self.model.networks)
+        #     if self.training:
+        #         self.replay_buffer.buffer = self.sm.load_replay_buffer(self.model.buffer_size, os.path.join(self.load_session, 'stage'+str(self.sm.stage)+'_latest_buffer.pkl'))
+        #     print(f"global steps: {self.total_steps}")
+        #     print(f"loaded model {self.load_session} (eps {self.episode}): {self.model.get_model_parameters()}")
+        # else:
+        #     self.sm.new_session_dir(util.stage)
+        #     self.sm.store_model(self.model)
+
+        # self.logger = Logger(self.training, self.sm.machine_dir, self.sm.session_dir, self.sm.session, self.model.get_model_parameters(), self.model.get_model_configuration(), str(util.stage), self.algorithm, self.episode)
+        # if ENABLE_VISUAL:
+        #     self.visual = DrlVisual(self.model.state_size, self.model.hidden_size)
+        #     self.model.attach_visual(self.visual)
         # ===================================================================== #
         #                             Start Process                             #
         # ===================================================================== #
@@ -152,12 +156,12 @@ class DrlAgent(Node):
                         next_state += frame_buffer[start : start + self.model.state_size]
 
                 # Train
-                if self.training == True and self.total_steps > self.observe_steps:
-                    self.replay_buffer.add_sample(state, action, [reward], next_state, [episode_done])
-                    if self.replay_buffer.get_length() >= self.model.batch_size:
-                        loss_c, loss_a, = self.model._train(self.replay_buffer)
-                        loss_critic += loss_c
-                        loss_actor += loss_a
+                # if self.training == True and self.total_steps > self.observe_steps:
+                #     self.replay_buffer.add_sample(state, action, [reward], next_state, [episode_done])
+                #     if self.replay_buffer.get_length() >= self.model.batch_size:
+                #         loss_c, loss_a, = self.model._train(self.replay_buffer)
+                #         loss_critic += loss_c
+                #         loss_actor += loss_a
 
                 if ENABLE_VISUAL:
                     self.visual.update_reward(reward_sum)
@@ -186,15 +190,11 @@ class DrlAgent(Node):
                 self.logger.update_test_results(step, outcome, dist_traveled, eps_duration, 0)
                 return
 
-            self.graph.update_data(step, self.total_steps, outcome, reward_sum, loss_critic, lost_actor)
-            self.logger.file_log.write(f"{self.episode}, {reward_sum}, {outcome}, {eps_duration}, {step}, {self.total_steps}, \
-                                            {self.replay_buffer.get_length()}, {loss_critic / step}, {lost_actor / step}\n")
+            # self.logger.file_log.write(f"{self.episode}, {reward_sum}, {outcome}, {eps_duration}, {step}, {self.total_steps}, \
+                                            # {self.replay_buffer.get_length()}, {loss_critic / step}, {lost_actor / step}\n")
 
-            if (self.episode % MODEL_STORE_INTERVAL == 0) or (self.episode == 1):
-                self.sm.save_session(self.episode, self.model.networks, self.graph.graphdata, self.replay_buffer.buffer)
-                self.logger.update_comparison_file(self.episode, self.graph.get_success_count(), self.graph.get_reward_average())
-            if (self.episode % GRAPH_DRAW_INTERVAL == 0) or (self.episode == 1):
-                self.graph.draw_plots(self.episode)
+            # if (self.episode % MODEL_STORE_INTERVAL == 0) or (self.episode == 1):
+            # if (self.episode % GRAPH_DRAW_INTERVAL == 0) or (self.episode == 1):
 
 
 

@@ -25,6 +25,7 @@ import numpy as np
 from ..common.settings import ENABLE_VISUAL, ENABLE_STACKING, OBSERVE_STEPS, MODEL_STORE_INTERVAL, GRAPH_DRAW_INTERVAL
 
 from ..common.storagemanager import StorageManager
+from ..common.graph import Graph
 from ..common.logger import Logger
 if ENABLE_VISUAL:
     from ..common.visual import DrlVisual
@@ -68,10 +69,12 @@ class DrlAgent(Node):
             quit("\033[1m" + "\033[93m" + f"invalid algorithm specified ({self.algorithm}), choose one of: dqn, ddpg, td3" + "\033[0m}")
 
         self.replay_buffer = ReplayBuffer(self.model.buffer_size)
+        self.graph = Graph()
 
         # ===================================================================== #
         #                             Model loading                             #
         # ===================================================================== #
+
         self.sm = StorageManager(self.algorithm, self.load_session, self.episode, self.device, util.stage)
 
         if self.load_session:
@@ -128,36 +131,14 @@ class DrlAgent(Node):
             episode_start = time.perf_counter()
 
             while not episode_done:
-                if self.training and self.total_steps < self.observe_steps:
-                    action = self.model.get_action_random()                                    # x[-1.0,1.0]
-                else:
-                    action = self.model.get_action(state, self.training, step, ENABLE_VISUAL)  # x[-1,1]
-                action_env = copy.deepcopy(action)
-                action_env[0] = action_env[0]*(1.1/2) + (-0.1 + 1.0)/2                         # x[-0.1,1.0]
-                action_env[1] = action_env[1]*(0.2/2)                                          # y[-0.1,0.1]
-                action_current = action_env
-                if self.algorithm == 'dqn':
-                    action_current = self.model.possible_actions[action]
+                # fix action
+                action_current = [1.5, 0.0, 0.0]
 
                 # Take a step
                 next_state, reward, episode_done, outcome, distance_traveled = util.step(self, action_current, action_past)
                 action_past = copy.deepcopy(action_current)
                 reward_sum += reward
 
-                if ENABLE_STACKING:
-                    frame_buffer = frame_buffer[self.model.state_size:] + list(next_state)      # Update big buffer with single step
-                    next_state = []                                                         # Prepare next set of frames (state)
-                    for depth in range(self.model.stack_depth):
-                        start = self.model.state_size * (self.model.frame_skip - 1) + (self.model.state_size * self.model.frame_skip * depth)
-                        next_state += frame_buffer[start : start + self.model.state_size]
-
-                # Train
-                if self.training == True and self.total_steps > self.observe_steps:
-                    self.replay_buffer.add_sample(state, action, [reward], next_state, [episode_done])
-                    if self.replay_buffer.get_length() >= self.model.batch_size:
-                        loss_c, loss_a, = self.model._train(self.replay_buffer)
-                        loss_critic += loss_c
-                        loss_actor += loss_a
 
                 if ENABLE_VISUAL:
                     self.visual.update_reward(reward_sum)
