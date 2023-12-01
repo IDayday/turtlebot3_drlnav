@@ -136,12 +136,8 @@ class DRLEnvironment(Node):
             print("ERROR: received odom was not from obstacle!")
 
     def odom_callback(self, msg):
-        if self.succeed != 1:
-            self.robot_x = msg.pose.pose.position.x - self.robot_x_tmp
-            self.robot_y = msg.pose.pose.position.y - self.robot_y_tmp
-        else:
-            self.robot_x = msg.pose.pose.position.x
-            self.robot_y = msg.pose.pose.position.y
+        self.robot_x = msg.pose.pose.position.x - self.robot_x_tmp
+        self.robot_y = msg.pose.pose.position.y - self.robot_y_tmp
         _, _, self.robot_heading = util.euler_from_quaternion(msg.pose.pose.orientation)
         self.robot_tilt = msg.pose.pose.orientation.y
         # print("robot_tilt", self.robot_tilt)
@@ -214,16 +210,20 @@ class DRLEnvironment(Node):
             self.robot_x_tmp += self.robot_x
             self.robot_y_tmp += self.robot_y
         req.radius = numpy.clip(self.difficulty_radius, 0.5, 4)
-        if success:
-            self.difficulty_radius *= 1.01
-            while not self.task_succeed_client.wait_for_service(timeout_sec=1.0):
-                self.get_logger().info('success service not available, waiting again...')
-            self.task_succeed_client.call_async(req)
-        else:
-            self.difficulty_radius *= 0.99
-            while not self.task_fail_client.wait_for_service(timeout_sec=1.0):
-                self.get_logger().info('fail service not available, waiting again...')
-            self.task_fail_client.call_async(req)
+        # if success:
+        #     self.difficulty_radius *= 1.01
+        #     while not self.task_succeed_client.wait_for_service(timeout_sec=1.0):
+        #         self.get_logger().info('success service not available, waiting again...')
+        #     self.task_succeed_client.call_async(req)
+        # else:
+        #     self.difficulty_radius *= 0.99
+        #     while not self.task_fail_client.wait_for_service(timeout_sec=1.0):
+        #         self.get_logger().info('fail service not available, waiting again...')
+        #     self.task_fail_client.call_async(req)
+
+        while not self.task_fail_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('fail service not available, waiting again...')
+        self.task_fail_client.call_async(req)
 
     # TODO: state
     def get_state(self, action_linear_previous, action_angular_previous):
