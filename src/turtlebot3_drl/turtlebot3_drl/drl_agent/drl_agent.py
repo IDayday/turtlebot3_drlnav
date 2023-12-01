@@ -21,7 +21,8 @@ import os
 import sys
 import time
 import numpy as np
-
+import random
+import torch
 from ..common.settings import ENABLE_VISUAL, ENABLE_STACKING, OBSERVE_STEPS, MODEL_STORE_INTERVAL, GRAPH_DRAW_INTERVAL
 
 from ..common.storagemanager import StorageManager
@@ -200,6 +201,10 @@ class DrlAgent(Node):
 
 
 def main(args=sys.argv[1:]):
+    # Set seed
+    np.random.seed(42)
+    random.seed(42)
+    torch.manual_seed(42)
     rclpy.init(args=args)
     drl_agent = DrlAgent(*args)
     rclpy.spin(drl_agent)

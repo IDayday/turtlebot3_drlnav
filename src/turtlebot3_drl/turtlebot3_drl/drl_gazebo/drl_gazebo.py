@@ -19,7 +19,8 @@
 import os
 import random
 import math
-import numpy
+import numpy as np
+import torch
 import time
 import sys
 
@@ -208,7 +209,7 @@ class DRLGazebo(Node):
         tries = 0
         while(True):
             ring_position = random.uniform(0, 1)
-            origin = radius + numpy.random.normal(0, 0.1) # in meters
+            origin = radius + np.random.normal(0, 0.1) # in meters
             goal_offset_x = math.cos(2 * math.pi * ring_position) * origin
             goal_offset_y = math.sin(2 * math.pi * ring_position) * origin
             goal_x = robot_pose_x + goal_offset_x
@@ -319,6 +320,10 @@ class DRLGazebo(Node):
 
 
 def main(args=sys.argv[1:]):
+    # Set seed
+    np.random.seed(42)
+    random.seed(42)
+    torch.manual_seed(42)
     rclpy.init()
     if args[0] == "1":
         train = True

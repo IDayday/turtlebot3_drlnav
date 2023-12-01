@@ -24,7 +24,7 @@ TOPIC_SCAN = 'scan'
 TOPIC_VELO = 'cmd_vel'
 TOPIC_ODOM = 'odom_out'
 
-EPISODE_TIMEOUT_SECONDS     = 10    # Number of seconds after which episode timeout occurs
+EPISODE_TIMEOUT_SECONDS     = 50    # Number of seconds after which episode timeout occurs
 ARENA_LENGTH                = 16   # meters 地图大小/希望设置的目标范围大小
 ARENA_WIDTH                 = 16   # meters 地图大小
 SPEED_LINEAR_MAX            = 1.5  # m/s 线速度最大值
