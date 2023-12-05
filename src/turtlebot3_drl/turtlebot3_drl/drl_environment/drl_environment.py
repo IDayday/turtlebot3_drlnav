@@ -82,6 +82,7 @@ class DRLEnvironment(Node):
 
         self.scan_ranges = [LIDAR_DISTANCE_CAP] * NUM_SCAN_SAMPLES
         self.obstacle_distance = LIDAR_DISTANCE_CAP
+        self.obstacle_index = 0
 
         self.difficulty_radius = 1
         self.local_step = 0
@@ -169,9 +170,10 @@ class DRLEnvironment(Node):
             goal_angle += 2 * math.pi
 
         self.goal_distance = distance_to_goal
-        print("goal_x, goal_y", [self.goal_x, self.goal_y])
-        print("robot_x, robot_y", [self.robot_x, self.robot_y])
-        print("distance_to_goal", distance_to_goal)
+        # print("goal_x, goal_y", [self.goal_x, self.goal_y])
+        # print("robot_x, robot_y", [self.robot_x, self.robot_y])
+        # print("distance_to_goal", distance_to_goal)
+        print("goal_x, goal_y, robot_x, robot_y, distance_to_goal", [self.goal_x, self.goal_y], [self.robot_x, self.robot_y], distance_to_goal)
         self.goal_angle = goal_angle
 
     # TODO: 传感器数据处理
@@ -186,6 +188,7 @@ class DRLEnvironment(Node):
                 self.scan_ranges[i] = np.clip(float(msg.ranges[i]) / LIDAR_DISTANCE_CAP, 0, 1)
                 if self.scan_ranges[i] < self.obstacle_distance:
                     self.obstacle_distance = self.scan_ranges[i]
+                    self.obstacle_index = i
         # print("min obstacle_distance", self.obstacle_distance)
         self.obstacle_distance *= LIDAR_DISTANCE_CAP
         # print("scan call back obstacle_distance", self.obstacle_distance)
@@ -327,9 +330,9 @@ class DRLEnvironment(Node):
         response.state = self.get_state([previous_action_X,previous_action_Y], previous_action[ANGULAR])
         # response.reward = rw.get_reward(self.succeed, action_linear, action_angular, self.goal_distance,
         #                                     self.goal_angle, self.obstacle_distance)
-
+        print("min obstacle_distance: , obstacle_index: ", self.obstacle_distance, self.obstacle_index)
         response.reward = rw.get_reward(self.succeed, self.state_tmp_list, self.goal_distance,
-                                            self.goal_angle, self.obstacle_distance)
+                                            self.goal_angle, self.obstacle_distance, self.obstacle_index)
         response.done = self.done
         response.success = self.succeed
         response.distance_traveled = 0.0
