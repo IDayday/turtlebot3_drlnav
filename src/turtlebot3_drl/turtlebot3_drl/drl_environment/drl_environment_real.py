@@ -22,6 +22,7 @@ import sys
 import copy
 
 from geometry_msgs.msg import Pose, Twist
+from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from turtlebot3_msgs.srv import DrlStep, Goal
@@ -79,7 +80,7 @@ class DRLEnvironment(Node):
         # publishers
         self.cmd_vel_pub = self.create_publisher(Twist, self.velo_topic, qos)
         # subscribers
-        self.goal_pose_sub = self.create_subscription(Pose, self.goal_topic, self.goal_pose_callback, qos)
+        self.goal_pose_sub = self.create_subscription(PoseStamped, self.goal_topic, self.goal_pose_callback, qos)
         self.odom_sub = self.create_subscription(Odometry, self.odom_topic, self.odom_callback, qos)
         self.scan_sub = self.create_subscription(LaserScan, self.scan_topic, self.scan_callback, qos_profile=qos_profile_sensor_data)
         # servers
@@ -91,6 +92,14 @@ class DRLEnvironment(Node):
     *******************************************************************************"""
 
     def goal_pose_callback(self, msg):
+        # self.goal_x = msg.position.x
+        # self.goal_y = msg.position.y
+        self.goal_distance = msg.pose.position.x
+        self.goal_angle = -msg.pose.position.y
+        self.new_goal = True
+        print(f"new goal! goal_distance: {self.goal_distance} goal_angle: {self.goal_angle}")
+
+    def goal_pose_callback_bak(self, msg):
         self.goal_x = msg.position.x
         self.goal_y = msg.position.y
         self.new_goal = True
@@ -127,12 +136,9 @@ class DRLEnvironment(Node):
         while goal_angle < -math.pi:
             goal_angle += 2 * math.pi
 
-        self.goal_distance = distance_to_goal
-        self.goal_angle = goal_angle
-        print("goal_x, goal_y, robot_x, robot_y, distance_to_goal", [self.goal_x, self.goal_y], [self.robot_x, self.robot_y], distance_to_goal)
-        # print("goal_x, goal_y", [self.goal_x, self.goal_y])
-        # print("robot_x, robot_y", [self.robot_x, self.robot_y])
-        # print("distance_to_goal", distance_to_goal)
+        # self.goal_distance = distance_to_goal
+        # self.goal_angle = goal_angle
+        # print("goal_x, goal_y, robot_x, robot_y, distance_to_goal", [self.goal_x, self.goal_y], [self.robot_x, self.robot_y], distance_to_goal)
 
     def filter_scan(self, real_scan):
         length = len(real_scan)
