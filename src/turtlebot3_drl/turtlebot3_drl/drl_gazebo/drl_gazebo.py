@@ -164,7 +164,7 @@ class DRLGazebo(Node):
 
     def random_goals(self):
         if self.reset_env_times <= self.warm_times:
-            goal_x = random.randrange(-20, 20) / 10.0   # random.randrange返回随机整数
+            goal_x = random.randrange(10, 20) / 10.0   # random.randrange返回随机整数
             goal_y = random.randrange(-20, 20) / 10.0
         elif self.warm_times< self.reset_env_times <= self.warm_times + self.learning_times :
             goal_x = random.randrange(-30, 30) / 10.0   # random.randrange返回随机整数
@@ -178,11 +178,26 @@ class DRLGazebo(Node):
         elif self.warm_times + 3*self.learning_times< self.reset_env_times <= self.warm_times + 4*self.learning_times:
             goal_x = random.randrange(-60, 60) / 10.0   # random.randrange返回随机整数
             goal_y = random.randrange(-60, 60) / 10.0
-        elif self.warm_times + 4*self.learning_times<= self.reset_env_times:
-            goal_x = random.randrange(-65, 65) / 10.0   # random.randrange返回随机整数
-            goal_y = random.randrange(-65, 65) / 10.0
+        elif self.warm_times + 4*self.learning_times<= self.reset_env_times <= self.warm_times + 5*self.learning_times:
+            goal_x = random.randrange(-70, 70) / 10.0   # random.randrange返回随机整数
+            goal_y = random.randrange(-70, 70) / 10.0
+        elif self.warm_times + 5*self.learning_times<= self.reset_env_times:
+            goal_x = random.randrange(-80, 80) / 10.0   # random.randrange返回随机整数
+            goal_y = random.randrange(-80, 80) / 10.0
         return goal_x , goal_y
 
+    # def random_goals(self):
+    #     if self.reset_env_times <= self.warm_times:
+    #         goal_x = random.randrange(-50, 50) / 10.0   # random.randrange返回随机整数
+    #         goal_y = random.randrange(-50, 50) / 10.0
+    #     elif self.warm_times< self.reset_env_times <= self.warm_times + self.learning_times :
+    #         goal_x = random.randrange(-60, 60) / 10.0   # random.randrange返回随机整数
+    #         goal_y = random.randrange(-60, 60) / 10.0
+    #     elif self.warm_times + self.learning_times< self.reset_env_times:
+    #         goal_x = random.randrange(-65, 65) / 10.0   # random.randrange返回随机整数
+    #         goal_y = random.randrange(-65, 65) / 10.0
+    #     return goal_x , goal_y
+    
     # 生成随机目标
     def generate_random_goal(self):
         self.prev_x = self.goal_x

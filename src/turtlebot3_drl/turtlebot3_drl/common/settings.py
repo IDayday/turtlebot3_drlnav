@@ -30,9 +30,9 @@ ARENA_WIDTH                 = 16   # meters 地图大小
 SPEED_LINEAR_MAX            = 1.5  # m/s 线速度最大值
 SPEED_ANGULAR_MAX           = 0.5   # rad/s 角速度最大值
 
-LIDAR_DISTANCE_CAP          = 3.5   # meters 雷达探测范围
+LIDAR_DISTANCE_CAP          = 5.0   # meters 雷达探测范围
 THRESHOLD_COLLISION         = 0.30  # meters 障碍物碰撞判定距离
-THREHSOLD_GOAL              = 0.70  # meters 目标抵达判定距离
+THREHSOLD_GOAL              = 0.20  # meters 目标抵达判定距离
 
 OBSTACLE_RADIUS             = 0.3  # meters 障碍物半径（圆柱体）
 MAX_NUMBER_OBSTACLES        = 6     # 最多障碍物数量
@@ -43,7 +43,7 @@ REAL_TOPIC_SCAN  = 'scan'
 REAL_TOPIC_VELO  = 'cmd_vel'
 REAL_TOPIC_ODOM  = 'odom_out'
 
-REAL_N_SCAN_SAMPLES         = 360    # LiDAR density count your robot is providing
+REAL_N_SCAN_SAMPLES         = 480    # LiDAR density count your robot is providing
 REAL_ARENA_LENGTH           = 50   # meters
 REAL_ARENA_WIDTH            = 50   # meters
 REAL_SPEED_LINEAR_MAX       = 1.5  # in m/s
@@ -58,18 +58,20 @@ REAL_THRESHOLD_GOAL         = 0.20  # meters, minimum distance to goal that coun
 # ===================================================================== #
 #                       DRL ALGORITHM SETTINGS                          #
 # ===================================================================== #
-
+MAX_GOAL_DISTANCE = 20.0
+MAX_SUBGOAL_DISTANCE = 5.0
 # DRL parameters
 ACTION_SIZE     = 3         # Not used for DQN, see DQN_ACTION_SIZE 三个动作 x方向线速度，y方向线速度,z轴旋转角速度
-HIDDEN_SIZE     = 512       # Number of neurons in hidden layers
-
+HIDDEN_SIZE     = [512, 128]       # Number of neurons in hidden layers
+GOAL_SIZE       = 5
 BATCH_SIZE      = 512      # Number of samples per training batch
 BUFFER_SIZE     = 1000000   # Number of samples stored in replay buffer before FIFO
 DISCOUNT_FACTOR = 0.99
 LEARNING_RATE   = 0.003
-TAU             = 0.003
+TAU             = 0.005
+ALPHA           = 0.1
 
-OBSERVE_STEPS   = 5000     # At training start random actions are taken for N steps for better exploration
+WARM_STEPS      = 5000     # At training start random actions are taken for N steps for better exploration
 STEP_TIME       = 0.1      # Delay between steps, can be set to 0  控制交互频率 初始100hz
 EPSILON_DECAY   = 0.9995    # Epsilon decay per step
 EPSILON_MINIMUM = 0.05

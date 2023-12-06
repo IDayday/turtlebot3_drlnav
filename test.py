@@ -1,5 +1,5 @@
 import numpy as np
-
+import math
 # del_num = real_scan.shape[0] - 360
 # gap = real_scan.shape[0]//del_num
 
@@ -23,8 +23,18 @@ def filter_scan(real_scan):
         real_scan = outcome
     return outcome
 
-for i in range(100):
-    real_scan = np.arange(0,np.random.randint(370,580))
-    outcome = filter_scan(real_scan)
-    if outcome.shape[0] != 360:
-        print("error", real_scan.shape[0])
+# for i in range(100):
+#     real_scan = np.arange(0,np.random.randint(370,580))
+#     outcome = filter_scan(real_scan)
+#     if outcome.shape[0] != 360:
+#         print("error", real_scan.shape[0])
+
+
+a = math.sqrt(pow(0.1,2)+pow(0.01,2))
+print(a)
+
+
+a = [1,2,3,4,6,5,7,8,9,10]
+
+b = np.mean(a[2:4])
+print(min(a))

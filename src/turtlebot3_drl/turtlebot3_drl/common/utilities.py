@@ -37,15 +37,15 @@ def step(agent_self, action, previous_action):
         if future.done():
             if future.result() is not None:
                 res = future.result()
-                return res.state, res.reward, res.done, res.success, res.distance_traveled
+                return res.state, res.goal, res.reward, res.done, res.success, res.distance_traveled
             else:
                 agent_self.get_logger().error(
                     'Exception while calling service: {0}'.format(future.exception()))
                 print("ERROR getting step service response!")
 
 def init_episode(agent_self):
-    state, _, _, _, _ = step(agent_self, [], [0.0, 0.0])
-    return state
+    state, goal, _, _, _, _ = step(agent_self, [], [0.0, 0.0])
+    return state, goal
 
 def get_goal_status(agent_self):
     req = Goal.Request()

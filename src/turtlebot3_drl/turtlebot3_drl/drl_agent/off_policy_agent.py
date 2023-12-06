@@ -19,8 +19,8 @@ import torch
 import torch.nn.functional as torchf
 
 from turtlebot3_drl.drl_environment.reward import REWARD_FUNCTION
-from ..common.settings import ENABLE_BACKWARD, ENABLE_STACKING, ACTION_SIZE, HIDDEN_SIZE, BATCH_SIZE, BUFFER_SIZE, DISCOUNT_FACTOR, \
-                                 LEARNING_RATE, TAU, STEP_TIME, EPSILON_DECAY, EPSILON_MINIMUM, STACK_DEPTH, FRAME_SKIP
+from ..common.settings import ENABLE_BACKWARD, ENABLE_STACKING, GOAL_SIZE, ACTION_SIZE, HIDDEN_SIZE, BATCH_SIZE, BUFFER_SIZE, DISCOUNT_FACTOR, \
+                                 LEARNING_RATE, TAU, ALPHA, STEP_TIME, EPSILON_DECAY, EPSILON_MINIMUM, STACK_DEPTH, FRAME_SKIP
 from ..drl_environment.drl_environment import NUM_SCAN_SAMPLES
 
 
@@ -33,6 +33,7 @@ class OffPolicyAgent(ABC):
         # Network structure
         # TODO: 网络参数：输入输出
         self.state_size         = NUM_SCAN_SAMPLES + 5
+        self.goal_size          = GOAL_SIZE
         self.action_size        = ACTION_SIZE
         self.hidden_size        = HIDDEN_SIZE
         self.input_size         = self.state_size
@@ -42,6 +43,7 @@ class OffPolicyAgent(ABC):
         self.discount_factor    = DISCOUNT_FACTOR
         self.learning_rate      = LEARNING_RATE
         self.tau                = TAU
+        self.alpha              = ALPHA
         # Other parameters
         self.step_time          = STEP_TIME
         self.loss_function      = torchf.smooth_l1_loss
@@ -73,20 +75,21 @@ class OffPolicyAgent(ABC):
 
     def _train(self, replaybuffer):
         batch = replaybuffer.sample(self.batch_size)
-        sample_s, sample_a, sample_r, sample_ns, sample_d = batch
+        sample_s, sample_g, sample_a, sample_r, sample_ns, sample_d = batch
         sample_s = torch.from_numpy(sample_s).to(self.device)
+        sample_g = torch.from_numpy(sample_g).to(self.device)
         sample_a = torch.from_numpy(sample_a).to(self.device)
         sample_r = torch.from_numpy(sample_r).to(self.device)
         sample_ns = torch.from_numpy(sample_ns).to(self.device)
         sample_d = torch.from_numpy(sample_d).to(self.device)
-        result = self.train(sample_s, sample_a, sample_r, sample_ns, sample_d)
+        result = self.train(sample_s, sample_g, sample_a, sample_r, sample_ns, sample_d)
         self.iteration += 1
         if self.epsilon and self.epsilon > self.epsilon_minimum:
             self.epsilon *= self.epsilon_decay
         return result
 
     def create_network(self, type, name):
-        network = type(name, self.input_size, self.action_size, self.hidden_size).to(self.device)
+        network = type(name, self.input_size, self.goal_size, self.action_size, self.hidden_size).to(self.device)
         self.networks.append(network)
         return network
 
@@ -117,20 +120,3 @@ class OffPolicyAgent(ABC):
 
     def attach_visual(self, visual):
         self.actor.visual = visual
-
-class Network(torch.nn.Module, ABC):
-    def __init__(self, name, visual=None):
-        super(Network, self).__init__()
-        self.name = name
-        self.visual = visual
-        self.iteration = 0
-
-    @abstractmethod
-    def forward():
-        pass
-
-    def init_weights(n, m):
-        if isinstance(m, torch.nn.Linear):
-            # --- define weights initialization here (optional) ---
-            torch.nn.init.xavier_uniform_(m.weight)
-            m.bias.data.fill_(0.01)

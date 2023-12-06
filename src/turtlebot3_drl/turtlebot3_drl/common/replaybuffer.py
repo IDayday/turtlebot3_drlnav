@@ -14,16 +14,17 @@ class ReplayBuffer:
         batchsize = min(batchsize, self.get_length())
         batch = random.sample(self.buffer, batchsize)
         s_array = np.float32([array[0] for array in batch])
-        a_array = np.float32([array[1] for array in batch])
-        r_array = np.float32([array[2] for array in batch])
-        new_s_array = np.float32([array[3] for array in batch])
-        done_array = np.float32([array[4] for array in batch])
+        g_array = np.float32([array[1] for array in batch])
+        a_array = np.float32([array[2] for array in batch])
+        r_array = np.float32([array[3] for array in batch])
+        new_s_array = np.float32([array[4] for array in batch])
+        done_array = np.float32([array[5] for array in batch])
 
-        return s_array, a_array, r_array, new_s_array, done_array
+        return s_array, g_array, a_array, r_array, new_s_array, done_array
 
     def get_length(self):
         return len(self.buffer)
 
-    def add_sample(self, s, a, r, new_s, done):
-        transition = (s, a, r, new_s, done)
+    def add_sample(self, s, g, a, r, new_s, done):
+        transition = (s, g, a, r, new_s, done)
         self.buffer.append(transition)

@@ -23,7 +23,7 @@ import time
 import numpy as np
 import random
 import torch
-from ..common.settings import ENABLE_VISUAL, ENABLE_STACKING, OBSERVE_STEPS, MODEL_STORE_INTERVAL, GRAPH_DRAW_INTERVAL
+from ..common.settings import ENABLE_VISUAL, ENABLE_STACKING, WARM_STEPS, MODEL_STORE_INTERVAL, GRAPH_DRAW_INTERVAL
 
 from ..common.storagemanager import StorageManager
 from ..common.graph import Graph
@@ -32,9 +32,9 @@ if ENABLE_VISUAL:
     from ..common.visual import DrlVisual
 from ..common import utilities as util
 
-from .dqn import DQN
+# from .dqn import DQN
 from .ddpg import DDPG
-from .td3 import TD3
+# from .td3 import TD3
 
 from turtlebot3_msgs.srv import DrlStep, Goal
 from std_srvs.srv import Empty
@@ -58,16 +58,18 @@ class DrlAgent(Node):
         self.sim_speed = util.get_simulation_speed(util.stage) if not self.real_robot else 1
         print(f"{'training' if (self.training) else 'testing' } on stage: {util.stage}")
         self.total_steps = 0
-        self.observe_steps = OBSERVE_STEPS
+        self.warm_steps = WARM_STEPS
 
-        if self.algorithm == 'dqn':
-            self.model = DQN(self.device, self.sim_speed)
-        elif self.algorithm == 'ddpg':
-            self.model = DDPG(self.device, self.sim_speed)
-        elif self.algorithm == 'td3':
-            self.model = TD3(self.device, self.sim_speed)
-        else:
-            quit("\033[1m" + "\033[93m" + f"invalid algorithm specified ({self.algorithm}), choose one of: dqn, ddpg, td3" + "\033[0m}")
+        # if self.algorithm == 'dqn':
+        #     self.model = DQN(self.device, self.sim_speed)
+        # elif self.algorithm == 'ddpg':
+        #     self.model = DDPG(self.device, self.sim_speed)
+        # elif self.algorithm == 'td3':
+        #     self.model = TD3(self.device, self.sim_speed)
+        # else:
+        #     quit("\033[1m" + "\033[93m" + f"invalid algorithm specified ({self.algorithm}), choose one of: dqn, ddpg, td3" + "\033[0m}")
+
+        self.model = DDPG(self.device, self.sim_speed)
 
         self.replay_buffer = ReplayBuffer(self.model.buffer_size)
         self.graph = Graph()
@@ -82,7 +84,8 @@ class DrlAgent(Node):
             self.model.device = self.device
             self.sm.load_weights(self.model.networks)
             if self.training:
-                self.replay_buffer.buffer = self.sm.load_replay_buffer(self.model.buffer_size, os.path.join(self.load_session, 'stage'+str(self.sm.stage)+'_latest_buffer.pkl'))
+                self.replay_buffer.buffer = self.sm.load_replay_buffer(self.model.buffer_size, \
+                                                                       os.path.join(self.load_session, 'stage'+str(self.sm.stage)+'_latest_buffer.pkl'))
             self.total_steps = self.graph.set_graphdata(self.sm.load_graphdata(), self.episode)
             print(f"global steps: {self.total_steps}")
             print(f"loaded model {self.load_session} (eps {self.episode}): {self.model.get_model_parameters()}")
@@ -91,7 +94,8 @@ class DrlAgent(Node):
             self.sm.store_model(self.model)
 
         self.graph.session_dir = self.sm.session_dir
-        self.logger = Logger(self.training, self.sm.machine_dir, self.sm.session_dir, self.sm.session, self.model.get_model_parameters(), self.model.get_model_configuration(), str(util.stage), self.algorithm, self.episode)
+        self.logger = Logger(self.training, self.sm.machine_dir, self.sm.session_dir, self.sm.session, \
+                             self.model.get_model_parameters(), self.model.get_model_configuration(), str(util.stage), self.algorithm, self.episode)
         if ENABLE_VISUAL:
             self.visual = DrlVisual(self.model.state_size, self.model.hidden_size)
             self.model.attach_visual(self.visual)
@@ -119,8 +123,9 @@ class DrlAgent(Node):
             episode_done = False
             step, reward_sum, loss_critic, loss_actor = 0, 0, 0, 0
             # TODO: 修改动作
-            action_past = [0.0, 0.0, 0.0]
-            state = util.init_episode(self)
+            vel_past = [0.0, 0.0, 0.0]
+            vel = [0.0, 0.0, 0.0]
+            state, goal = util.init_episode(self)
 
             if ENABLE_STACKING:
                 frame_buffer = [0.0] * (self.model.state_size * self.model.stack_depth * self.model.frame_skip)
@@ -132,20 +137,25 @@ class DrlAgent(Node):
             episode_start = time.perf_counter()
 
             while not episode_done:
-                if self.training and self.total_steps < self.observe_steps:
-                    action = self.model.get_action_random()                                    # x[-1.0,1.0]
-                else:
-                    action = self.model.get_action(state, self.training, step, ENABLE_VISUAL)  # x[-1,1]
-                action_env = copy.deepcopy(action)
-                action_env[0] = action_env[0]*(1.1/2) + (-0.1 + 1.0)/2                         # x[-0.1,1.0]
-                action_env[1] = action_env[1]*(0.2/2)                                          # y[-0.1,0.1]
-                action_current = action_env
+                acc, action = self.model.get_action(state, goal, step, self.training, self.total_steps, self.warm_steps)
+                print("acc", acc)
+                print("vel_past", vel_past)
+                for i in range(3):
+                    v = vel_past[i] + acc[i]*self.model.step_time
+                    vel[i] = v
+                
+                action_env = np.array(copy.deepcopy(vel))
+
+                action_env[0] = np.clip(action_env[0],-0.1,1.0)                 
+                action_env[1] = np.clip(action_env[1],-0.1,0.1)    
+                action_env[2] = np.clip(action_env[2],-0.5,0.5) 
+                vel_current = action_env.tolist()
                 if self.algorithm == 'dqn':
-                    action_current = self.model.possible_actions[action]
+                    vel_current = self.model.possible_actions[action]
 
                 # Take a step
-                next_state, reward, episode_done, outcome, distance_traveled = util.step(self, action_current, action_past)
-                action_past = copy.deepcopy(action_current)
+                next_state, goal, reward, episode_done, outcome, distance_traveled = util.step(self, vel_current, vel_past)
+                vel_past = copy.deepcopy(vel_current)
                 reward_sum += reward
 
                 if ENABLE_STACKING:
@@ -156,8 +166,8 @@ class DrlAgent(Node):
                         next_state += frame_buffer[start : start + self.model.state_size]
 
                 # Train
-                if self.training == True and self.total_steps > self.observe_steps:
-                    self.replay_buffer.add_sample(state, action, [reward], next_state, [episode_done])
+                if self.training == True and self.total_steps > self.warm_steps:
+                    self.replay_buffer.add_sample(state, goal, action, [reward], next_state, [episode_done])
                     if self.replay_buffer.get_length() >= self.model.batch_size:
                         loss_c, loss_a, = self.model._train(self.replay_buffer)
                         loss_critic += loss_c
@@ -178,8 +188,8 @@ class DrlAgent(Node):
             episode += 1
 
     def finish_episode(self, step, eps_duration, outcome, dist_traveled, reward_sum, loss_critic, lost_actor):
-            if self.total_steps < self.observe_steps:
-                print(f"Observe phase: {self.total_steps}/{self.observe_steps} steps")
+            if self.total_steps < self.warm_steps:
+                print(f"Warm phase: {self.total_steps}/{self.warm_steps} steps")
                 return
 
             self.episode += 1
