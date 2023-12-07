@@ -32,7 +32,7 @@ class OffPolicyAgent(ABC):
 
         # Network structure
         # TODO: 网络参数：输入输出
-        self.state_size         = NUM_SCAN_SAMPLES + 5
+        self.state_size         = NUM_SCAN_SAMPLES + 14
         self.goal_size          = GOAL_SIZE
         self.action_size        = ACTION_SIZE
         self.hidden_size        = HIDDEN_SIZE

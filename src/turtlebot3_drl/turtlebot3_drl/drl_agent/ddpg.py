@@ -22,10 +22,10 @@ class Actor(nn.Module):
         self.name = name
 
         # --- define layers here ---
-        self.fa1 = nn.Linear(state_size-5, hidden_size[0])
+        self.fa1 = nn.Linear(state_size-14, hidden_size[0])
         self.fa2 = nn.Linear(hidden_size[0], hidden_size[1])
 
-        self.fa3 = nn.Linear(hidden_size[1]+5+goal_size, hidden_size[1])
+        self.fa3 = nn.Linear(hidden_size[1]+14+goal_size, hidden_size[1])
         self.acc_mean = nn.Linear(hidden_size[1], action_size)
         self.acc_logstd = nn.Linear(hidden_size[1], action_size)
 
@@ -34,8 +34,8 @@ class Actor(nn.Module):
 
     def forward(self, states, goals):
         # --- define forward pass here ---
-        scan = states[:,:-5]
-        other = states[:,-5:]
+        scan = states[:,:-14]
+        other = states[:,-14:]
 
         # scan
         x1 = torch.relu(self.fa1(scan))
@@ -67,17 +67,17 @@ class Critic(nn.Module):
         super(Critic, self).__init__()
 
         # --- define layers here ---
-        self.l1 = nn.Linear(state_size-5, int(hidden_size[0] / 2))
+        self.l1 = nn.Linear(state_size-14, int(hidden_size[0] / 2))
         self.l2 = nn.Linear(int(hidden_size[0] / 2), 32)
-        self.l3 = nn.Linear(32+5+goal_size+action_size, int(hidden_size[1] / 2))
+        self.l3 = nn.Linear(32+14+goal_size+action_size, int(hidden_size[1] / 2))
         self.l4 = nn.Linear(int(hidden_size[1] / 2), 1)
         # --- define layers until here ---
 
 
     def forward(self, states, actions, goals):
         # --- define forward pass here ---
-        scan = states[:,:-5]
-        other = states[:,-5:]
+        scan = states[:,:-14]
+        other = states[:,-14:]
 
         # scan
         xs = torch.relu(self.l1(scan))
