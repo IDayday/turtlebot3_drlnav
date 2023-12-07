@@ -228,7 +228,7 @@ def get_reward_E(succeed, state_tmp_list, goal_dist, goal_angle, min_obstacle_di
         else:
             r_obstacle = 0
         if min_obstacle_dist < 1.25:
-            if min_obstacle_dist < 1.25:
+            if obstacle_index < 180:
                 r_obstale_index = -20 * obstacle_index / 180
             else:
                 r_obstale_index = -20 * (360 - obstacle_index) / 180
