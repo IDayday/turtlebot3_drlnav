@@ -122,26 +122,45 @@ class DDPG(OffPolicyAgent):
         self.hard_update(self.actor_target, self.actor)
         self.hard_update(self.critic_target, self.critic)
 
+    def calculate_map(self, acc_bound):
+        bias = (acc_bound[1] + acc_bound[0])/2
+        mult = (acc_bound[1] - acc_bound[0])/2
+        return mult, bias
+
     def get_action(self, state, goal, step, is_training, total_step, warm_step):
-        goal_angle = state[-4]*math.pi
+        goal_angle = state[-13]*math.pi
         # goal_distance = state[-5]*MAX_GOAL_DISTANCE
         # ahead_distance = np.mean(state[230:250]*LIDAR_DISTANCE_CAP)
         # min_obst_distance = min(state[:480])*LIDAR_DISTANCE_CAP
 
-        # trun around
+        # trun around at begin if necessary
+        acc = [0.0, 0.0, 0.0]
         action = [0.0, 0.0, 0.0]
-        if abs(goal_angle) > math.pi/3 and step < 20:
+        turn = False
+
+        acc_x_b = [state[-6], state[-5]]
+        acc_y_b = [state[-4], state[-3]]
+        acc_w_b = [state[-2], state[-1]]
+
+        acc_x_mult, acc_x_bias = self.calculate_map(acc_x_b)
+        acc_y_mult, acc_y_bias = self.calculate_map(acc_y_b)
+        acc_w_mult, acc_w_bias = self.calculate_map(acc_w_b)
+
+        if abs(goal_angle) > math.pi/3 and step < 50:
             if goal_angle > 0:
-                action = [0.0, 0.0, 0.5]
+                acc = [0.0, 0.0, 0.5]
             else:
-                action = [0.0, 0.0, -0.5]
-            model_output_ = action
+                acc = [0.0, 0.0, -0.5]
+            turn = True
+            action = acc
+        elif abs(goal_angle) < math.pi/3 and turn:
+            acc = [0.0, 0.0, 0.0]
         else:
             if total_step < warm_step:
-                model_output_ = self.get_action_random()
-                action[0] = model_output_[0]*1.5
-                action[1] = model_output_[1]*0.1
-                action[2] = model_output_[2]*0.5
+                action = self.get_action_random()
+                acc[0] = action[0]*acc_x_mult + acc_x_bias
+                acc[1] = action[1]*acc_y_mult + acc_y_bias
+                acc[2] = action[2]*acc_w_mult + acc_w_bias
             else:
                 state = np.asarray(state, np.float32)
                 goal = np.asarray(goal, np.float32)
@@ -152,32 +171,19 @@ class DDPG(OffPolicyAgent):
                 with torch.no_grad():
                     state = torch.FloatTensor(states).to(self.device)
                     goal = torch.FloatTensor(goal).to(self.device)
-                    model_output_, _, model_output = self.actor.sample(state, goal)
-                    model_output_ = model_output_.squeeze().detach().cpu().numpy()
-                    model_output = model_output.squeeze().detach().cpu().numpy()
+                    action, _, mean = self.actor.sample(state, goal)
+                    action = action.squeeze().detach().cpu().numpy()
+                    mean = mean.squeeze().detach().cpu().numpy()
 
                 if is_training:
-                    action[0] = float(model_output_[0]*1.5)
-                    action[1] = float(model_output_[1]*0.1)
-                    action[2] = float(model_output_[2]*0.5)
+                    acc[0] = float(action[0]*acc_x_mult + acc_x_bias)
+                    acc[1] = float(action[1]*acc_y_mult + acc_y_bias)
+                    acc[2] = float(action[2]*acc_w_mult + acc_w_bias)
                 else:
-                    action[0] = float(model_output[0]*1.5)
-                    action[1] = float(model_output[1]*0.1)
-                    action[2] = float(model_output[2]*0.5)
-
-        # state = np.asarray(state, np.float32)
-        # goal = np.asarray(goal, np.float32)
-        # d_state = state.shape[-1]
-        # states = state.reshape(-1,d_state)
-        # d_goal = goal.shape[-1]
-        # goal = goal.reshape(-1, d_goal)
-        # with torch.no_grad():
-        #     state = torch.FloatTensor(states).to(self.device)
-        #     goal = torch.FloatTensor(goal).to(self.device)
-        #     model_output_, _, model_output = self.actor.sample(state, goal)
-        # action = model_output.squeeze()
-        # print("action", action)
-        return action, model_output_
+                    acc[0] = float(mean[0]*acc_x_mult + acc_x_bias)
+                    acc[1] = float(mean[1]*acc_y_mult + acc_y_bias)
+                    acc[2] = float(mean[2]*acc_w_mult + acc_w_bias)
+        return acc, action
 
     # TODO:随机加速度
     def get_action_random(self):

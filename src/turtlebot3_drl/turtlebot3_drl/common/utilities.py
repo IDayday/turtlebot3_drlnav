@@ -23,10 +23,11 @@ def check_gpu():
         print("device name: ", torch.cuda.get_device_name(0))
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def step(agent_self, action, previous_action):
+def step(agent_self, action, previous_action, acc):
     req = DrlStep.Request()
     req.action = action
     req.previous_action = previous_action
+    req.acc = acc
 
     while not agent_self.step_comm_client.wait_for_service(timeout_sec=1.0):
         agent_self.get_logger().info('env step service not available, waiting again...')
@@ -44,7 +45,7 @@ def step(agent_self, action, previous_action):
                 print("ERROR getting step service response!")
 
 def init_episode(agent_self):
-    state, goal, _, _, _, _ = step(agent_self, [], [0.0, 0.0])
+    state, goal, _, _, _, _ = step(agent_self, [], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
     return state, goal
 
 def get_goal_status(agent_self):

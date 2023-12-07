@@ -1,5 +1,6 @@
 float32[] action
 float32[] previous_action
+float32[] acc
 ---
 float32[] state
 float32[] goal

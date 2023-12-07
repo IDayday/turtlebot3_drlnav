@@ -1,5 +1,6 @@
-from ..common.settings import REWARD_FUNCTION, COLLISION_OBSTACLE, COLLISION_WALL, TUMBLE, SUCCESS, TIMEOUT, RESULTS_NUM
+from ..common.settings import REWARD_FUNCTION, COLLISION_OBSTACLE, COLLISION_WALL, TUMBLE, SUCCESS, TIMEOUT, RESULTS_NUM, THREHSOLD_GOALHEADING
 import numpy as np
+import math
 goal_dist_initial = 0
 
 reward_function_internal = None
@@ -101,8 +102,6 @@ def get_reward_C(succeed, action_linear_x, action_linear_y, action_angular, goal
         return float(reward)
 
 
-
-
 def get_reward(succeed, state_tmp_list, distance_to_goal, goal_angle, min_obstacle_distance):
     return reward_function_internal(succeed, state_tmp_list, distance_to_goal, goal_angle, min_obstacle_distance)
 
@@ -172,6 +171,75 @@ def get_reward_D(succeed, state_tmp_list, goal_dist, goal_angle, min_obstacle_di
         elif succeed == TIMEOUT :
              reward -= 300
         return float(reward)
+
+
+def get_reward_E(succeed, state_tmp_list, goal_dist, goal_angle, min_obstacle_dist):
+        # state:   480 scan  +  2 goal_info  + 3 vel + 3 acc + 6 acc_bound
+        pp_state = state_tmp_list[0]
+        p_state = state_tmp_list[1]
+        state = state_tmp_list[2]
+
+        vx = state[-12]
+        vy = state[-11]
+        vw = state[-10]
+
+        acc_x = state[-9]
+        acc_y = state[-8]
+        acc_w = state[-7]
+
+        p_acc_x = p_state[-9]
+        p_acc_y = p_state[-8]
+        p_acc_w = p_state[-7]
+
+        r_acc = - abs(acc_x - p_acc_x) - abs(acc_y - p_acc_y) - abs(acc_w - p_acc_w)
+
+        # scan [-5, 0]
+        if isinstance(state, list):
+             state = np.array(state)
+        else:
+             state = np.array(state.tolist())
+        scan = state[0:480]
+        r_scan = -(sum(1*(1-scan[:160]))/160 + sum(3*(1-scan[160:320]))/160 + sum(1*(1-scan[320:]))/160)
+
+        # [-3.14, 0]
+        r_yaw = -1 * abs(goal_angle)
+
+        # [-4, 0]
+        r_vangular = -1 * abs(vw)
+
+        # [-1, 1]
+        r_distance = (2 * goal_dist_initial) / (goal_dist_initial + goal_dist) - 1
+
+        # [-20, 0]
+        if min_obstacle_dist < 0.25:
+            r_obstacle = -20
+        else:
+            r_obstacle = 0
+        
+        if vx < 0:
+             r_vlinear_x = -20 * abs(vx)
+        else:
+             r_vlinear_x = -0.1 * vx
+        r_vlinear_y = -20 * abs(vy)
+        r_vlinear = r_vlinear_x + r_vlinear_y
+
+        reward = 0.5*r_yaw + 5*r_distance + 0.2*r_obstacle + 0.1*r_vlinear + 0.5*r_vangular + 0.2*r_acc + 0.05*r_scan - 0.1
+
+        if succeed == SUCCESS:
+            v_linear = math.sqrt(vx**2 + vy**2)
+            if abs(goal_angle) < THREHSOLD_GOALHEADING and v_linear < 0.3:
+                reward += 800
+            elif v_linear < 0.3:
+                reward += 700
+            elif abs(goal_angle) < THREHSOLD_GOALHEADING:
+                reward += 600
+            else:
+                reward += 500
+        elif succeed == COLLISION_OBSTACLE or succeed == COLLISION_WALL or succeed == TUMBLE or succeed == TIMEOUT:
+            reward -= 500
+        return float(reward)
+
+
 
 def reward_initalize(init_distance_to_goal):
     global goal_dist_initial

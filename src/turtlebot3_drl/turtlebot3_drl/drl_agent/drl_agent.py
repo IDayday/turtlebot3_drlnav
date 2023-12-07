@@ -23,7 +23,8 @@ import time
 import numpy as np
 import random
 import torch
-from ..common.settings import ENABLE_VISUAL, ENABLE_STACKING, WARM_STEPS, MODEL_STORE_INTERVAL, GRAPH_DRAW_INTERVAL
+from ..common.settings import ENABLE_VISUAL, ENABLE_STACKING, WARM_STEPS, MODEL_STORE_INTERVAL, GRAPH_DRAW_INTERVAL, SPEED_LINEAR_X_BOUND, SPEED_LINEAR_Y_BOUND,\
+                                SPEED_ANGULAR_BOUND
 
 from ..common.storagemanager import StorageManager
 from ..common.graph import Graph
@@ -146,15 +147,15 @@ class DrlAgent(Node):
                 
                 action_env = np.array(copy.deepcopy(vel))
 
-                action_env[0] = np.clip(action_env[0],-0.1,1.0)                 
-                action_env[1] = np.clip(action_env[1],-0.1,0.1)    
-                action_env[2] = np.clip(action_env[2],-0.5,0.5) 
+                action_env[0] = np.clip(action_env[0],SPEED_LINEAR_X_BOUND[0],SPEED_LINEAR_X_BOUND[1])                 
+                action_env[1] = np.clip(action_env[1],SPEED_LINEAR_Y_BOUND[0],SPEED_LINEAR_Y_BOUND[1])    
+                action_env[2] = np.clip(action_env[2],SPEED_ANGULAR_BOUND[0],SPEED_ANGULAR_BOUND[1]) 
                 vel_current = action_env.tolist()
                 if self.algorithm == 'dqn':
                     vel_current = self.model.possible_actions[action]
 
                 # Take a step
-                next_state, goal, reward, episode_done, outcome, distance_traveled = util.step(self, vel_current, vel_past)
+                next_state, goal, reward, episode_done, outcome, distance_traveled = util.step(self, vel_current, vel_past, acc)
                 vel_past = copy.deepcopy(vel_current)
                 reward_sum += reward
 
@@ -166,9 +167,9 @@ class DrlAgent(Node):
                         next_state += frame_buffer[start : start + self.model.state_size]
 
                 # Train
-                if self.training == True and self.total_steps > self.warm_steps:
+                if self.training == True:
                     self.replay_buffer.add_sample(state, goal, action, [reward], next_state, [episode_done])
-                    if self.replay_buffer.get_length() >= self.model.batch_size:
+                    if self.replay_buffer.get_length() >= self.model.batch_size and self.total_steps > self.warm_steps:
                         loss_c, loss_a, = self.model._train(self.replay_buffer)
                         loss_critic += loss_c
                         loss_actor += loss_a

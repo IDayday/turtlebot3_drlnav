@@ -17,7 +17,7 @@ GRAPH_AVERAGE_REWARD     = 10       # Average the reward graph over every N epis
 # ===================================================================== #
 
 # --- SIMULATION ENVIRONMENT SETTINGS ---
-REWARD_FUNCTION = "D"           # Defined in reward.py
+REWARD_FUNCTION = "E"           # Defined in reward.py
 EPISODE_TIMEOUT_SECONDS = 50    # Number of seconds after which episode timeout occurs
 
 TOPIC_SCAN = 'scan'
@@ -27,12 +27,14 @@ TOPIC_ODOM = 'odom_out'
 EPISODE_TIMEOUT_SECONDS     = 50    # Number of seconds after which episode timeout occurs
 ARENA_LENGTH                = 16   # meters 地图大小/希望设置的目标范围大小
 ARENA_WIDTH                 = 16   # meters 地图大小
-SPEED_LINEAR_MAX            = 1.5  # m/s 线速度最大值
-SPEED_ANGULAR_MAX           = 0.5   # rad/s 角速度最大值
+SPEED_LINEAR_X_BOUND        = [-0.1,1.5]   # m/s 线速度X区间
+SPEED_LINEAR_Y_BOUND        = [-0.1,0.1]   # m/s 线速度Y区间
+SPEED_ANGULAR_BOUND         = [-0.5,0.5]   # rad/s 角速度最大值
 
 LIDAR_DISTANCE_CAP          = 5.0   # meters 雷达探测范围
 THRESHOLD_COLLISION         = 0.30  # meters 障碍物碰撞判定距离
-THREHSOLD_GOAL              = 0.20  # meters 目标抵达判定距离
+THREHSOLD_GOAL              = 0.70  # meters 目标抵达判定距离
+THREHSOLD_GOALHEADING       = 0.174 # rad    目标抵达角度判定
 
 OBSTACLE_RADIUS             = 0.3  # meters 障碍物半径（圆柱体）
 MAX_NUMBER_OBSTACLES        = 6     # 最多障碍物数量

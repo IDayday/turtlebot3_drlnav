@@ -38,7 +38,8 @@ from . import reward as rw
 from ..common import utilities as util
 from ..common.settings import ENABLE_BACKWARD, EPISODE_TIMEOUT_SECONDS, ENABLE_MOTOR_NOISE, UNKNOWN, SUCCESS, COLLISION_WALL, COLLISION_OBSTACLE, TIMEOUT, TUMBLE, \
                                 TOPIC_SCAN, TOPIC_VELO, TOPIC_ODOM, ARENA_LENGTH, ARENA_WIDTH, MAX_NUMBER_OBSTACLES, OBSTACLE_RADIUS, LIDAR_DISTANCE_CAP, \
-                                    SPEED_LINEAR_MAX, SPEED_ANGULAR_MAX, THRESHOLD_COLLISION, THREHSOLD_GOAL, ENABLE_DYNAMIC_GOALS
+                                    SPEED_LINEAR_X_BOUND, SPEED_LINEAR_Y_BOUND, SPEED_ANGULAR_BOUND, THRESHOLD_COLLISION, THREHSOLD_GOAL, THREHSOLD_GOALHEADING, ENABLE_DYNAMIC_GOALS,\
+                                    STEP_TIME
 
 NUM_SCAN_SAMPLES = util.get_scan_count()
 LINEAR_X = 0
@@ -83,7 +84,7 @@ class DRLEnvironment(Node):
         self.goal_distance = MAX_GOAL_DISTANCE
         self.initial_distance_to_goal = MAX_GOAL_DISTANCE
 
-        self.scan_ranges = [LIDAR_DISTANCE_CAP] * NUM_SCAN_SAMPLES
+        self.scan_ranges = [1.0] * NUM_SCAN_SAMPLES
         self.obstacle_distance = LIDAR_DISTANCE_CAP
 
         self.difficulty_radius = 1
@@ -212,8 +213,9 @@ class DRLEnvironment(Node):
         # TODO: 修正里程计
         req.robot_pose_x = self.robot_x
         req.robot_pose_y = self.robot_y
-        self.robot_x_tmp += self.robot_x
-        self.robot_y_tmp += self.robot_y
+        if success != 1:
+            self.robot_x_tmp += self.robot_x
+            self.robot_y_tmp += self.robot_y
         req.radius = np.clip(self.difficulty_radius, 0.5, 4)
         if success:
             self.difficulty_radius *= 1.01
@@ -226,33 +228,47 @@ class DRLEnvironment(Node):
                 self.get_logger().info('fail service not available, waiting again...')
             self.task_fail_client.call_async(req)
 
-        # while not self.task_fail_client.wait_for_service(timeout_sec=1.0):
-        #     self.get_logger().info('fail service not available, waiting again...')
-        # self.task_fail_client.call_async(req)
+    def calculate_acc_bound(self, spped_bound, spped):
+        acc_up = float((spped_bound[1] - spped))
+        acc_down = float((spped_bound[0] - spped))
+        acc_b = [acc_down, acc_up]
+        return acc_b
 
     # TODO: state
-    def get_state(self, action_linear_previous, action_angular_previous):
+    def get_state(self, action_linear_previous, action_angular_previous, acc):
+        # TODO: 状态定义
         state = copy.deepcopy(self.scan_ranges)                                             # range: [ 0, 1]
         state.append(float(np.clip((self.goal_distance / MAX_GOAL_DISTANCE), 0, 1)))     # range: [ 0, 1]
         state.append(float(self.goal_angle) / math.pi)                                      # range: [-1, 1]
-        # state.append(float(self.goal_x - self.robot_x))
-        # state.append(float(self.goal_y - self.robot_y))
         v_x = float(action_linear_previous[LINEAR_X])
         v_y = float(action_linear_previous[LINEAR_Y])
         v_w = float(action_angular_previous)
-        state.append(float(action_linear_previous[LINEAR_X]))                               # range: [-1, 1]
-        state.append(float(action_linear_previous[LINEAR_Y]))                               # range: [-1, 1]
-        state.append(float(action_angular_previous))                                        # range: [-1, 1]
+        state.append(v_x)                         
+        state.append(v_y)                             
+        state.append(v_w)
+        state.append(float(acc[0]))
+        state.append(float(acc[1]))
+        state.append(float(acc[2]))                              
+
+        # calculate acc bound
+        acc_x_b = self.calculate_acc_bound(SPEED_LINEAR_X_BOUND, v_x)
+        acc_y_b = self.calculate_acc_bound(SPEED_LINEAR_Y_BOUND, v_y)
+        acc_w_b = self.calculate_acc_bound(SPEED_ANGULAR_BOUND, v_w)
+        state.extend(acc_x_b)
+        state.extend(acc_y_b)
+        state.extend(acc_w_b)
+
         self.local_step += 1
 
         if self.local_step <= 30: # Grace period to wait for simulation reset
             return state
         # Success
         # TODO: 增加成功判定
-        SPEED_LINEAR_MAX_X = 0.187*(self.goal_distance - 0.5) + 0.1
-        v_x_real = v_x * SPEED_LINEAR_MAX_X
-        v_y_real = v_y * 0.1
-        if self.goal_distance < THREHSOLD_GOAL and math.sqrt(pow(v_x_real,2)+pow(v_y_real,2))<=0.2:
+        # X__X = 0.187*(self.goal_distance - 0.5) + 0.1
+        # v_x_real = v_x * X__X
+        # v_y_real = v_y * 0.1
+        # if self.goal_distance < THREHSOLD_GOAL and math.sqrt(pow(v_x_real,2)+pow(v_y_real,2))<=0.2:
+        if self.goal_distance < THREHSOLD_GOAL and abs(self.robot_heading) < THREHSOLD_GOALHEADING:
             self.succeed = SUCCESS
         # Collision
         elif self.obstacle_distance < THRESHOLD_COLLISION:
@@ -280,7 +296,7 @@ class DRLEnvironment(Node):
 
     def initalize_episode(self, response):
         self.initial_distance_to_goal = self.goal_distance
-        response.state = self.get_state([0,0], 0)
+        response.state = self.get_state([0.0,0.0], 0.0, [0.0,0.0,0.0])
         for i in range(3):
             self.state_queue(copy.deepcopy(response.state))
         response.goal = self.subgoal
@@ -290,33 +306,21 @@ class DRLEnvironment(Node):
         rw.reward_initalize(self.initial_distance_to_goal)
         return response
 
-    # TODO: step交互反馈
+    # TODO: step interaction
     def step_comm_callback(self, request, response):
         if len(request.action) == 0:
             return self.initalize_episode(response)
         action = np.array(request.action)
-        if ENABLE_MOTOR_NOISE:
-            request.action[LINEAR_X] += np.clip(np.random.normal(0, 0.05), -0.1, 0.1)
-            request.action[LINEAR_Y] += np.clip(np.random.normal(0, 0.05), -0.1, 0.1)
+        acc = np.array(request.acc)
+        # if ENABLE_MOTOR_NOISE:
+        #     request.action[LINEAR_X] += np.clip(np.random.normal(0, 0.05), -0.1, 0.1)
+        #     request.action[LINEAR_Y] += np.clip(np.random.normal(0, 0.05), -0.1, 0.1)
             # request.action[ANGULAR] += numpy.clip(numpy.random.normal(0, 0.05), -0.1, 0.1)
 
-        c = 0.311*self.goal_distance - 0.0556
-        if c >= 1.5:
-            SPEED_LINEAR_MAX_X = 1.5
-        elif c <= 0.1:
-            SPEED_LINEAR_MAX_X = 0.1
-        else:
-            SPEED_LINEAR_MAX_X = c
+        # TODO: actual vel constraint
+        # c = 0.311*self.goal_distance - 0.0556
 
-        # Un-normalize actions
-        if ENABLE_BACKWARD:
-            if self.obstacle_distance < 1:
-                action_linear_x = np.clip(action[LINEAR_X], -0.1, 0.5)
-            else:
-                action_linear_x = np.clip(action[LINEAR_X],-0.1, SPEED_LINEAR_MAX_X)
-        else:
-            action_linear_x = (action[LINEAR_X] + 1) / 2 * SPEED_LINEAR_MAX
-            action_linear_y = (action[LINEAR_Y] + 1) / 2 * SPEED_LINEAR_MAX
+        action_linear_x = action[LINEAR_X]
         action_linear_y = action[LINEAR_Y]
         action_angular = action[ANGULAR]
 
@@ -328,11 +332,8 @@ class DRLEnvironment(Node):
         self.cmd_vel_pub.publish(twist)
 
         # Prepare repsonse
-        previous_action = request.previous_action
-        previous_action_X = previous_action[LINEAR_X]
-        previous_action_Y = previous_action[LINEAR_Y]
-        action_linear = math.sqrt(pow(action_linear_x,2)+pow(action_linear_y,2))
-        response.state = self.get_state([previous_action_X,previous_action_Y], previous_action[ANGULAR])
+        response.state = self.get_state([action_linear_x,action_linear_y], action_angular, acc)
+        # action_linear = math.sqrt(pow(action_linear_x,2)+pow(action_linear_y,2))
         # response.reward = rw.get_reward(self.succeed, action_linear, action_angular, self.goal_distance,
         #                                     self.goal_angle, self.obstacle_distance)
         response.goal = self.subgoal
