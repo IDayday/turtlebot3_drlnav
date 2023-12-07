@@ -52,7 +52,7 @@ REAL_SPEED_ANGULAR_MAX      = 1.0   # in rad/s
 REAL_LIDAR_CORRECTION       = 0.40  # meters, subtracted from the real LiDAR values 激光雷达盲区？修正值？
 REAL_LIDAR_DISTANCE_CAP     = 3.5   # meters, scan distances are capped this value
 REAL_THRESHOLD_COLLISION    = 0.15  # meters, minimum distance to an object that counts as a collision
-REAL_THRESHOLD_GOAL         = 0.20  # meters, minimum distance to goal that counts as reaching the goal
+REAL_THRESHOLD_GOAL         = 0.80  # meters, minimum distance to goal that counts as reaching the goal
 
 
 # ===================================================================== #

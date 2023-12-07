@@ -16,6 +16,7 @@
 #
 # Authors: Ryan Shim, Gilbert, Tomas
 
+import math
 import copy
 import os
 import sys
@@ -23,7 +24,8 @@ import time
 import numpy as np
 import torch
 
-from ..common.settings import ENABLE_VISUAL, ENABLE_STACKING, OBSERVE_STEPS, MODEL_STORE_INTERVAL, GRAPH_DRAW_INTERVAL
+from ..common.settings import ENABLE_VISUAL, ENABLE_STACKING, OBSERVE_STEPS, MODEL_STORE_INTERVAL, GRAPH_DRAW_INTERVAL, \
+                                  REAL_ARENA_LENGTH, REAL_ARENA_WIDTH, REAL_THRESHOLD_GOAL
 
 from ..common.storagemanager import StorageManager
 from ..common.logger import Logger
@@ -42,6 +44,7 @@ import rclpy
 from rclpy.node import Node
 from ..common.replaybuffer import ReplayBuffer
 
+MAX_GOAL_DISTANCE = math.sqrt(REAL_ARENA_LENGTH**2 + REAL_ARENA_WIDTH**2)
 class DrlAgent(Node):
     def __init__(self, training, algorithm, load_session="", load_episode=0, real_robot=0):
         super().__init__(algorithm + '_agent')
@@ -113,15 +116,18 @@ class DrlAgent(Node):
 
     def process(self, episode_num):
         util.pause_simulation(self, self.real_robot)
-        episode = 0
-        while episode < episode_num:
+        # episode = 0
+        while True:
             util.wait_new_goal(self)
             episode_done = False
             step, reward_sum, loss_critic, loss_actor = 0, 0, 0, 0
             # TODO: 修改动作
             action_past = [0.0, 0.0, 0.0]
+            action_current = [0.0, 0.0, 0.0]
             state = util.init_episode(self)
-
+            state_, _, _, _, _ = util.step(self, action_current, action_past)
+            if state_[-5] * MAX_GOAL_DISTANCE < REAL_THRESHOLD_GOAL:
+                continue
             if ENABLE_STACKING:
                 frame_buffer = [0.0] * (self.model.state_size * self.model.stack_depth * self.model.frame_skip)
                 state = [0.0] * (self.model.state_size * (self.model.stack_depth - 1)) + list(state)
@@ -175,7 +181,7 @@ class DrlAgent(Node):
             duration = time.perf_counter() - episode_start
 
             self.finish_episode(step, duration, outcome, distance_traveled, reward_sum, loss_critic, loss_actor)
-            episode += 1
+            # episode += 1
 
     def finish_episode(self, step, eps_duration, outcome, dist_traveled, reward_sum, loss_critic, lost_actor):
             if self.total_steps < self.observe_steps:

@@ -191,10 +191,10 @@ class DRLEnvironment(Node):
         if self.goal_distance < REAL_THRESHOLD_GOAL:
             print("Outcome: Goal reached! :)")
             self.succeed = SUCCESS
-       # Collision
-        elif self.obstacle_distance < REAL_THRESHOLD_COLLISION:
-           print("Collision! (wall) :(")
-           self.succeed = COLLISION_WALL
+    #    # Collision
+    #     elif self.obstacle_distance < REAL_THRESHOLD_COLLISION:
+    #        print("Collision! (wall) :(")
+    #        self.succeed = COLLISION_WALL
        # Timeout
        # elif self.time_sec >= self.episode_deadline:
        #     print("Outcome: Time out! :(")
