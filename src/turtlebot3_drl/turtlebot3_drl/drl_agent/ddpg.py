@@ -10,15 +10,15 @@ from ..common.settings import ENABLE_BACKWARD, ENABLE_STACKING, LIDAR_DISTANCE_C
 from ..common.ounoise import OUNoise
 from ..drl_environment.drl_environment import NUM_SCAN_SAMPLES
 
-from .off_policy_agent import OffPolicyAgent
+from .off_policy_agent import OffPolicyAgent, Network
 
 
 # Reference for network structure: https://arxiv.org/pdf/2102.10711.pdf
 # https://github.com/hanlinniu/turtlebot3_ddpg_collision_avoidance/blob/main/turtlebot_ddpg/scripts/original_ddpg/ddpg_network_turtlebot3_original_ddpg.py
 
-class Actor(nn.Module):
+class Actor(Network):
     def __init__(self, name, state_size, goal_size, action_size, hidden_size):
-        super(Actor, self).__init__()
+        super(Actor, self).__init__(name)
         self.name = name
 
         # --- define layers here ---
@@ -31,6 +31,8 @@ class Actor(nn.Module):
 
         self.LOG_SIG_MIN, self.LOG_SIG_MAX = -20, 2
         # --- define layers until here ---
+
+        self.apply(super().init_weights)
 
     def forward(self, states, goals):
         # --- define forward pass here ---
@@ -47,6 +49,8 @@ class Actor(nn.Module):
         acc_mean = self.acc_mean(x3)
         acc_logstd = self.acc_logstd(x3)
         acc_std = torch.clamp(acc_logstd, min=self.LOG_SIG_MIN, max=self.LOG_SIG_MAX).exp()
+        # print("acc_mean", acc_mean)
+        # print("acc_std", acc_std)
         normal = torch.distributions.Normal(acc_mean, acc_std)
 
         return normal
@@ -62,9 +66,9 @@ class Actor(nn.Module):
         mean = torch.tanh(normal.mean)
         return action, log_prob, mean
 
-class Critic(nn.Module):
-    def __init__(self, state_size, goal_size, action_size, hidden_size):
-        super(Critic, self).__init__()
+class Critic(Network):
+    def __init__(self, name, state_size, goal_size, action_size, hidden_size):
+        super(Critic, self).__init__(name)
 
         # --- define layers here ---
         self.l1 = nn.Linear(state_size-14, int(hidden_size[0] / 2))
@@ -73,6 +77,7 @@ class Critic(nn.Module):
         self.l4 = nn.Linear(int(hidden_size[1] / 2), 1)
         # --- define layers until here ---
 
+        self.apply(super().init_weights)
 
     def forward(self, states, actions, goals):
         # --- define forward pass here ---
@@ -93,8 +98,8 @@ class EnsembleCritic(nn.Module):
     def __init__(self, name, state_size, goal_size, action_size, hidden_size, n_Q=2):
         super(EnsembleCritic, self).__init__()
         self.name = name
-        ensemble_Q = [Critic(state_size=state_size, goal_size=goal_size, action_size=action_size, \
-                             hidden_size=hidden_size) for _ in range(n_Q)]			
+        ensemble_Q = [Critic(name=name + str(i), state_size=state_size, goal_size=goal_size, action_size=action_size, \
+                             hidden_size=hidden_size) for i in range(n_Q)]			
         self.ensemble_Q = nn.ModuleList(ensemble_Q)
         self.n_Q = n_Q
 
@@ -129,6 +134,9 @@ class DDPG(OffPolicyAgent):
 
     def get_action(self, state, goal, step, is_training, total_step, warm_step):
         goal_angle = state[-13]*math.pi
+        acc_w_bound = [state[-2], state[-1]]
+        v_w = state[-10]
+        # print("state", state)
         # goal_distance = state[-5]*MAX_GOAL_DISTANCE
         # ahead_distance = np.mean(state[230:250]*LIDAR_DISTANCE_CAP)
         # min_obst_distance = min(state[:480])*LIDAR_DISTANCE_CAP
@@ -145,44 +153,54 @@ class DDPG(OffPolicyAgent):
         acc_x_mult, acc_x_bias = self.calculate_map(acc_x_b)
         acc_y_mult, acc_y_bias = self.calculate_map(acc_y_b)
         acc_w_mult, acc_w_bias = self.calculate_map(acc_w_b)
+        # print("acc_x_mult", acc_x_mult, "acc_x_bias", acc_x_bias)
 
-        if abs(goal_angle) > math.pi/3 and step < 50:
-            if goal_angle > 0:
-                acc = [0.0, 0.0, 0.5]
-            else:
-                acc = [0.0, 0.0, -0.5]
-            turn = True
-            action = acc
-        elif abs(goal_angle) < math.pi/3 and turn:
-            acc = [0.0, 0.0, 0.0]
+        # if abs(goal_angle) > math.pi/3 and step < 50:
+        #     if goal_angle > 0:
+        #         acc = [0.0, 0.0, acc_w_bound[1]]
+        #     else:
+        #         acc = [0.0, 0.0, acc_w_bound[0]]
+        #     turn = True
+        #     action = acc
+        # elif abs(goal_angle) < math.pi/3 and turn:
+        #     if v_w > 0:
+        #         acc = [0.0, 0.0, -0.1]
+        #     elif v_w == 0:
+        #         acc = [0.0, 0.0, 0.0]
+        #     elif v_w < 0:
+        #         acc = [0.0, 0.0, 0.1]
+        # else:
+        if total_step < warm_step:
+            action = self.get_action_random()
+            acc[0] = action[0]*acc_x_mult + acc_x_bias
+            acc[1] = action[1]*acc_y_mult + acc_y_bias
+            acc[2] = action[2]*acc_w_mult + acc_w_bias
+            # print("random acc", acc)
         else:
-            if total_step < warm_step:
-                action = self.get_action_random()
-                acc[0] = action[0]*acc_x_mult + acc_x_bias
-                acc[1] = action[1]*acc_y_mult + acc_y_bias
-                acc[2] = action[2]*acc_w_mult + acc_w_bias
-            else:
-                state = np.asarray(state, np.float32)
-                goal = np.asarray(goal, np.float32)
-                d_state = state.shape[-1]
-                states = state.reshape(-1,d_state)
-                d_goal = goal.shape[-1]
-                goal = goal.reshape(-1, d_goal)
-                with torch.no_grad():
-                    state = torch.FloatTensor(states).to(self.device)
-                    goal = torch.FloatTensor(goal).to(self.device)
-                    action, _, mean = self.actor.sample(state, goal)
-                    action = action.squeeze().detach().cpu().numpy()
-                    mean = mean.squeeze().detach().cpu().numpy()
+            state = np.asarray(state, np.float32)
+            goal = np.asarray(goal, np.float32)
+            d_state = state.shape[-1]
+            states = state.reshape(-1,d_state)
+            d_goal = goal.shape[-1]
+            goal = goal.reshape(-1, d_goal)
+            with torch.no_grad():
+                state = torch.FloatTensor(states).to(self.device)
+                goal = torch.FloatTensor(goal).to(self.device)
+                action, _, mean = self.actor.sample(state, goal)
+                action = action.squeeze().detach().cpu().numpy()
+                mean = mean.squeeze().detach().cpu().numpy()
+                # print("model output", action)
+                # print("model mean", mean)
 
-                if is_training:
-                    acc[0] = float(action[0]*acc_x_mult + acc_x_bias)
-                    acc[1] = float(action[1]*acc_y_mult + acc_y_bias)
-                    acc[2] = float(action[2]*acc_w_mult + acc_w_bias)
-                else:
-                    acc[0] = float(mean[0]*acc_x_mult + acc_x_bias)
-                    acc[1] = float(mean[1]*acc_y_mult + acc_y_bias)
-                    acc[2] = float(mean[2]*acc_w_mult + acc_w_bias)
+            if is_training:
+                acc[0] = float(action[0]*acc_x_mult + acc_x_bias)
+                acc[1] = float(action[1]*acc_y_mult + acc_y_bias)
+                acc[2] = float(action[2]*acc_w_mult + acc_w_bias)
+            else:
+                acc[0] = float(mean[0]*acc_x_mult + acc_x_bias)
+                acc[1] = float(mean[1]*acc_y_mult + acc_y_bias)
+                acc[2] = float(mean[2]*acc_w_mult + acc_w_bias)
+
         return acc, action
 
     # TODO:随机加速度
@@ -204,7 +222,7 @@ class DDPG(OffPolicyAgent):
     def train(self, state, goal, action, reward, state_next, done):
         # optimize critic
         with torch.no_grad():
-            next_action, _, _ = self.actor.sample(state_next, goal)
+            next_action, _, _ = self.actor_target.sample(state_next, goal)
             target_Q = self.critic_target(state_next, next_action, goal)
             target_Q = torch.min(target_Q, -1, keepdim=True)[0]
             target_Q = reward + (1.0-done) * self.discount_factor*target_Q
@@ -214,10 +232,10 @@ class DDPG(OffPolicyAgent):
 
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
-        self.critic_optimizer.step()
-
-        # nn.utils.clip_grad_norm_(self.critic.parameters(), max_norm=2.0, norm_type=2)
         # self.critic_optimizer.step()
+
+        nn.utils.clip_grad_norm_(self.critic.parameters(), max_norm=2.0, norm_type=2)
+        self.critic_optimizer.step()
 
         action, D_KL = self.sample_action_and_KL(state, goal)
 
@@ -229,10 +247,10 @@ class DDPG(OffPolicyAgent):
 
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
-        self.actor_optimizer.step()
-
-        # nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=2.0, norm_type=2)
         # self.actor_optimizer.step()
+
+        nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=2.0, norm_type=2)
+        self.actor_optimizer.step()
 
         # Soft update all target networks
         self.soft_update(self.actor_target, self.actor, self.tau)

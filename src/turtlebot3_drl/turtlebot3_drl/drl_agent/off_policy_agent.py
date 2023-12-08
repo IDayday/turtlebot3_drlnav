@@ -120,3 +120,20 @@ class OffPolicyAgent(ABC):
 
     def attach_visual(self, visual):
         self.actor.visual = visual
+
+class Network(torch.nn.Module, ABC):
+    def __init__(self, name, visual=None):
+        super(Network, self).__init__()
+        self.name = name
+        self.visual = visual
+        self.iteration = 0
+
+    @abstractmethod
+    def forward():
+        pass
+
+    def init_weights(n, m):
+        if isinstance(m, torch.nn.Linear):
+            # --- define weights initialization here (optional) ---
+            torch.nn.init.xavier_uniform_(m.weight)
+            m.bias.data.fill_(0.1)

@@ -62,7 +62,8 @@ class DRLEnvironment(Node):
 
         self.goal_x, self.goal_y = 0.0, 0.0
         self.subgoal_distance, self.subgoal_angle = 0.0, 0.0
-        self.subgoal = [0.1, math.pi*10/180, 0.1, 0.05, 0.05]
+        # self.subgoal = [0.1, math.pi*10/180, 0.1, 0.05, 0.05]
+        self.subgoal = [0.0, 0.0, 0.0, 0.0, 0.0]
         self.robot_x, self.robot_y = 0.0, 0.0
         self.robot_x_prev, self.robot_y_prev = 0.0, 0.0
         self.robot_x_tmp, self.robot_y_tmp = 0.0, 0.0
@@ -169,9 +170,9 @@ class DRLEnvironment(Node):
             goal_angle += 2 * math.pi
 
         self.goal_distance = distance_to_goal
-        print("goal_x, goal_y", [self.goal_x, self.goal_y])
-        print("robot_x, robot_y", [self.robot_x, self.robot_y])
-        print("distance_to_goal", distance_to_goal)
+        # print("goal_x, goal_y", [self.goal_x, self.goal_y])
+        # print("robot_x, robot_y", [self.robot_x, self.robot_y])
+        # print("distance_to_goal", distance_to_goal)
         self.goal_angle = goal_angle
 
     # TODO: 传感器数据处理
@@ -227,10 +228,10 @@ class DRLEnvironment(Node):
             while not self.task_fail_client.wait_for_service(timeout_sec=1.0):
                 self.get_logger().info('fail service not available, waiting again...')
             self.task_fail_client.call_async(req)
-
+    # TODO: acc bound
     def calculate_acc_bound(self, spped_bound, spped):
-        acc_up = float((spped_bound[1] - spped))
-        acc_down = float((spped_bound[0] - spped))
+        acc_up = float((spped_bound[1] - spped))/2
+        acc_down = float((spped_bound[0] - spped))/2
         acc_b = [acc_down, acc_up]
         return acc_b
 
@@ -259,7 +260,7 @@ class DRLEnvironment(Node):
         state.extend(acc_w_b)
 
         self.local_step += 1
-
+        self.state_queue(state)
         if self.local_step <= 30: # Grace period to wait for simulation reset
             return state
         # Success
@@ -268,7 +269,7 @@ class DRLEnvironment(Node):
         # v_x_real = v_x * X__X
         # v_y_real = v_y * 0.1
         # if self.goal_distance < THREHSOLD_GOAL and math.sqrt(pow(v_x_real,2)+pow(v_y_real,2))<=0.2:
-        if self.goal_distance < THREHSOLD_GOAL and abs(self.robot_heading) < THREHSOLD_GOALHEADING:
+        if self.goal_distance < THREHSOLD_GOAL:
             self.succeed = SUCCESS
         # Collision
         elif self.obstacle_distance < THRESHOLD_COLLISION:
@@ -291,7 +292,6 @@ class DRLEnvironment(Node):
         if self.succeed is not UNKNOWN:
             print("succeed", self.succeed)
             self.stop_reset_robot(self.succeed == SUCCESS)
-        self.state_queue(state)
         return state
 
     def initalize_episode(self, response):

@@ -202,12 +202,14 @@ def get_reward_E(succeed, state_tmp_list, goal_dist, goal_angle, min_obstacle_di
         r_scan = -(sum(1*(1-scan[:160]))/160 + sum(3*(1-scan[160:320]))/160 + sum(1*(1-scan[320:]))/160)
 
         # [-3.14, 0]
+        # p_goal_angle = state[-13]
         r_yaw = -1 * abs(goal_angle)
 
-        # [-4, 0]
+        # [-0.5, 0]
         r_vangular = -1 * abs(vw)
 
         # [-1, 1]
+        # p_goal_distance = state[-14]
         r_distance = (2 * goal_dist_initial) / (goal_dist_initial + goal_dist) - 1
 
         # [-20, 0]
@@ -223,19 +225,25 @@ def get_reward_E(succeed, state_tmp_list, goal_dist, goal_angle, min_obstacle_di
         r_vlinear_y = -20 * abs(vy)
         r_vlinear = r_vlinear_x + r_vlinear_y
 
-        reward = 0.5*r_yaw + 5*r_distance + 0.2*r_obstacle + 0.1*r_vlinear + 0.5*r_vangular + 0.2*r_acc + 0.05*r_scan - 0.1
+        reward = 1*r_yaw + 3*r_distance + 0.2*r_obstacle + 0.1*r_vlinear + 4*r_vangular + 0.2*r_acc + 0.05*r_scan - 3
+        print(f"r_yaw {round(1*r_yaw,4)}, r_distance{round(3*r_distance,4)}, \
+              r_vlinear{round(0.1*r_vlinear,4)}, r_vangular{round(4*r_vangular,4)}, r_acc{round(0.2*r_acc,4)}, r_scan{round(0.05*r_scan,4)}")
 
         if succeed == SUCCESS:
             v_linear = math.sqrt(vx**2 + vy**2)
             if abs(goal_angle) < THREHSOLD_GOALHEADING and v_linear < 0.3:
-                reward += 800
+                reward += 1500
             elif v_linear < 0.3:
-                reward += 700
+                reward += 1200
             elif abs(goal_angle) < THREHSOLD_GOALHEADING:
-                reward += 600
+                reward += 1000
             else:
-                reward += 500
-        elif succeed == COLLISION_OBSTACLE or succeed == COLLISION_WALL or succeed == TUMBLE or succeed == TIMEOUT:
+                reward += 800
+        elif succeed == COLLISION_OBSTACLE or succeed == COLLISION_WALL:
+            reward -= 800
+        elif succeed == TUMBLE:
+            reward -= 1000
+        elif succeed == TIMEOUT:
             reward -= 500
         return float(reward)
 

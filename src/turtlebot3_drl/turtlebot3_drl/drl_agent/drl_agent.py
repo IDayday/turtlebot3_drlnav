@@ -24,7 +24,7 @@ import numpy as np
 import random
 import torch
 from ..common.settings import ENABLE_VISUAL, ENABLE_STACKING, WARM_STEPS, MODEL_STORE_INTERVAL, GRAPH_DRAW_INTERVAL, SPEED_LINEAR_X_BOUND, SPEED_LINEAR_Y_BOUND,\
-                                SPEED_ANGULAR_BOUND
+                                SPEED_ANGULAR_BOUND, FINTUEN_ON_SAME_SETTING
 
 from ..common.storagemanager import StorageManager
 from ..common.graph import Graph
@@ -59,6 +59,7 @@ class DrlAgent(Node):
         self.sim_speed = util.get_simulation_speed(util.stage) if not self.real_robot else 1
         print(f"{'training' if (self.training) else 'testing' } on stage: {util.stage}")
         self.total_steps = 0
+        self.pretrain_steps = 0
         self.warm_steps = WARM_STEPS
 
         # if self.algorithm == 'dqn':
@@ -85,9 +86,13 @@ class DrlAgent(Node):
             self.model.device = self.device
             self.sm.load_weights(self.model.networks)
             if self.training:
-                self.replay_buffer.buffer = self.sm.load_replay_buffer(self.model.buffer_size, \
+                if FINTUEN_ON_SAME_SETTING:
+                    self.replay_buffer.buffer = self.sm.load_replay_buffer(self.model.buffer_size, \
                                                                        os.path.join(self.load_session, 'stage'+str(self.sm.stage)+'_latest_buffer.pkl'))
+                else:
+                    self.warm_steps = 10000
             self.total_steps = self.graph.set_graphdata(self.sm.load_graphdata(), self.episode)
+            self.pretrain_steps = copy.deepcopy(self.total_steps)
             print(f"global steps: {self.total_steps}")
             print(f"loaded model {self.load_session} (eps {self.episode}): {self.model.get_model_parameters()}")
         else:
@@ -139,8 +144,8 @@ class DrlAgent(Node):
 
             while not episode_done:
                 acc, action = self.model.get_action(state, goal, step, self.training, self.total_steps, self.warm_steps)
-                print("acc", acc)
-                print("vel_past", vel_past)
+                # print("acc", acc)
+                # print("vel_past", vel_past)
                 for i in range(3):
                     v = vel_past[i] + acc[i]*self.model.step_time
                     vel[i] = v
@@ -169,7 +174,7 @@ class DrlAgent(Node):
                 # Train
                 if self.training == True:
                     self.replay_buffer.add_sample(state, goal, action, [reward], next_state, [episode_done])
-                    if self.replay_buffer.get_length() >= self.model.batch_size and self.total_steps > self.warm_steps:
+                    if self.replay_buffer.get_length() >= self.model.batch_size and self.total_steps > self.warm_steps+self.pretrain_steps:
                         loss_c, loss_a, = self.model._train(self.replay_buffer)
                         loss_critic += loss_c
                         loss_actor += loss_a

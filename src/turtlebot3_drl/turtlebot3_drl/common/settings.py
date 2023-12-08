@@ -10,7 +10,7 @@ ENABLE_DYNAMIC_GOALS     = False    # If true, goal difficulty (distance) is ada
 MODEL_STORE_INTERVAL     = 100      # Store the model weights every N episodes
 GRAPH_DRAW_INTERVAL      = 10       # Draw the graph every N episodes (drawing too often will slow down training)
 GRAPH_AVERAGE_REWARD     = 10       # Average the reward graph over every N episodes
-
+FINTUEN_ON_SAME_SETTING  = False
 
 # ===================================================================== #
 #                         ENVIRONMENT SETTINGS                          #
@@ -31,7 +31,7 @@ SPEED_LINEAR_X_BOUND        = [-0.1,1.5]   # m/s 线速度X区间
 SPEED_LINEAR_Y_BOUND        = [-0.1,0.1]   # m/s 线速度Y区间
 SPEED_ANGULAR_BOUND         = [-0.5,0.5]   # rad/s 角速度最大值
 
-LIDAR_DISTANCE_CAP          = 5.0   # meters 雷达探测范围
+LIDAR_DISTANCE_CAP          = 3.5   # meters 雷达探测范围
 THRESHOLD_COLLISION         = 0.30  # meters 障碍物碰撞判定距离
 THREHSOLD_GOAL              = 0.70  # meters 目标抵达判定距离
 THREHSOLD_GOALHEADING       = 0.174 # rad    目标抵达角度判定
@@ -64,16 +64,17 @@ MAX_GOAL_DISTANCE = 20.0
 MAX_SUBGOAL_DISTANCE = 5.0
 # DRL parameters
 ACTION_SIZE     = 3         # Not used for DQN, see DQN_ACTION_SIZE 三个动作 x方向线速度，y方向线速度,z轴旋转角速度
-HIDDEN_SIZE     = [512, 128]       # Number of neurons in hidden layers
+HIDDEN_SIZE     = [256, 64]       # Number of neurons in hidden layers
 GOAL_SIZE       = 5
-BATCH_SIZE      = 512      # Number of samples per training batch
-BUFFER_SIZE     = 1000000   # Number of samples stored in replay buffer before FIFO
+BATCH_SIZE      = 1024      # Number of samples per training batch
+BUFFER_SIZE     = 250000   # Number of samples stored in replay buffer before FIFO  250*1000
 DISCOUNT_FACTOR = 0.99
-LEARNING_RATE   = 0.003
+LEARNING_RATE   = 0.0001
 TAU             = 0.005
 ALPHA           = 0.1
 
 WARM_STEPS      = 5000     # At training start random actions are taken for N steps for better exploration
+RESET_TIMES     = 0      # If fintune, we set the last training episodes, or take it 0
 STEP_TIME       = 0.1      # Delay between steps, can be set to 0  控制交互频率 初始100hz
 EPSILON_DECAY   = 0.9995    # Epsilon decay per step
 EPSILON_MINIMUM = 0.05
