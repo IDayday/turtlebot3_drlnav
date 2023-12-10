@@ -259,6 +259,12 @@ class DRLEnvironment(Node):
         state.extend(acc_y_b)
         state.extend(acc_w_b)
 
+        state.append(self.robot_x)
+        state.append(self.robot_y)
+        state.append(self.robot_heading)
+        state.append(self.goal_x)
+        state.append(self.goal_y)
+
         self.local_step += 1
         self.state_queue(state)
         if self.local_step <= 30: # Grace period to wait for simulation reset

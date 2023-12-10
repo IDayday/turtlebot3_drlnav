@@ -5,12 +5,13 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 from turtlebot3_drl.drl_environment.reward import REWARD_FUNCTION
-from ..common.settings import ENABLE_BACKWARD, ENABLE_STACKING, LIDAR_DISTANCE_CAP, MAX_GOAL_DISTANCE, MAX_SUBGOAL_DISTANCE
+from ..common.settings import ENABLE_BACKWARD, ENABLE_STACKING, LIDAR_DISTANCE_CAP, MAX_GOAL_DISTANCE, MAX_SUBGOAL_DISTANCE, THREHSOLD_GOAL
 
 from ..common.ounoise import OUNoise
 from ..drl_environment.drl_environment import NUM_SCAN_SAMPLES
 
 from .off_policy_agent import OffPolicyAgent, Network
+from ..common.utilities import filter_scan
 
 
 # Reference for network structure: https://arxiv.org/pdf/2102.10711.pdf
@@ -127,15 +128,45 @@ class DDPG(OffPolicyAgent):
         self.hard_update(self.actor_target, self.actor)
         self.hard_update(self.critic_target, self.critic)
 
+        self.new_subgoal = True
+        self.subgoal_xy = [0.0, 0.0]
+
     def calculate_map(self, acc_bound):
         bias = (acc_bound[1] + acc_bound[0])/2
         mult = (acc_bound[1] - acc_bound[0])/2
         return mult, bias
 
-    def get_action(self, state, goal, step, is_training, total_step, warm_step):
-        goal_angle = state[-13]*math.pi
-        acc_w_bound = [state[-2], state[-1]]
-        v_w = state[-10]
+    def cal_safe(self, scan, threshold=0.2):
+        robot_safe = False
+        tmp_index = []
+        for i in range(len(scan)-20):
+            ds = np.mean(scan[i:i+20])
+            if ds > threshold:
+                tmp_index.append(i+10)
+        if len(tmp_index) > 0:
+            robot_safe = True
+        return robot_safe, tmp_index
+
+    def cal_subgoal(self, robot_xy, subgoal_xy, robot_heading):
+        subgoal_dis = math.sqrt((robot_xy[0]-subgoal_xy[0])**2 + (robot_xy[1]-subgoal_xy[1])**2)
+        heading_to_goal = math.atan2((subgoal_xy[1] - robot_xy[1]), (subgoal_xy[0] - robot_xy[0]))
+        subgoal_angle = heading_to_goal - robot_heading
+        return [subgoal_dis, subgoal_angle]
+
+
+    def get_action(self, state, goal, step, is_training, total_step, warm_step, play_in_rule):
+
+        goal_angle = state[-18]*math.pi
+        goal_distance = state[-19]*MAX_GOAL_DISTANCE
+        goal_x = state[-2]
+        goal_y = state[-1]
+        robot_x = state[-5]
+        robot_y = state[-4]
+        robot_heading = state[-3]
+        # acc_w_bound = [state[-2], state[-1]]
+        pre_vel = state[-17:-14]
+        scan = state[0:480]
+        pre_scan = filter_scan(scan)
         # print("state", state)
         # goal_distance = state[-5]*MAX_GOAL_DISTANCE
         # ahead_distance = np.mean(state[230:250]*LIDAR_DISTANCE_CAP)
@@ -144,64 +175,108 @@ class DDPG(OffPolicyAgent):
         # trun around at begin if necessary
         acc = [0.0, 0.0, 0.0]
         action = [0.0, 0.0, 0.0]
+        vel = [0.0, 0.0, 0.0]
         turn = False
 
-        acc_x_b = [state[-6], state[-5]]
-        acc_y_b = [state[-4], state[-3]]
-        acc_w_b = [state[-2], state[-1]]
+        acc_x_b = [state[-11], state[-10]]
+        acc_y_b = [state[-9], state[-8]]
+        acc_w_b = [state[-7], state[-6]]
 
         acc_x_mult, acc_x_bias = self.calculate_map(acc_x_b)
         acc_y_mult, acc_y_bias = self.calculate_map(acc_y_b)
         acc_w_mult, acc_w_bias = self.calculate_map(acc_w_b)
         # print("acc_x_mult", acc_x_mult, "acc_x_bias", acc_x_bias)
 
-        # if abs(goal_angle) > math.pi/3 and step < 50:
-        #     if goal_angle > 0:
-        #         acc = [0.0, 0.0, acc_w_bound[1]]
-        #     else:
-        #         acc = [0.0, 0.0, acc_w_bound[0]]
-        #     turn = True
-        #     action = acc
-        # elif abs(goal_angle) < math.pi/3 and turn:
-        #     if v_w > 0:
-        #         acc = [0.0, 0.0, -0.1]
-        #     elif v_w == 0:
-        #         acc = [0.0, 0.0, 0.0]
-        #     elif v_w < 0:
-        #         acc = [0.0, 0.0, 0.1]
-        # else:
-        if total_step < warm_step:
-            action = self.get_action_random()
-            acc[0] = action[0]*acc_x_mult + acc_x_bias
-            acc[1] = action[1]*acc_y_mult + acc_y_bias
-            acc[2] = action[2]*acc_w_mult + acc_w_bias
-            # print("random acc", acc)
+        # update subgoal
+
+        self.subgoal = self.cal_subgoal([robot_x,robot_y], self.subgoal_xy, robot_heading)
+
+        # is safe or not
+        robot_safe, _ = self.cal_safe(pre_scan, 0.2)
+        _, tmp_index = self.cal_safe(pre_scan, 0.5)
+        lengths = len(tmp_index)
+        s = int(lengths/2)
+
+        if goal_distance < 4:
+            self.new_subgoal = False
+            self.subgoal = [goal_distance, goal_angle]
+        elif self.subgoal[0] < THREHSOLD_GOAL:
+            self.new_subgoal = True
+        elif self.subgoal[0] > 5:
+            self.new_subgoal = True
         else:
-            state = np.asarray(state, np.float32)
-            goal = np.asarray(goal, np.float32)
-            d_state = state.shape[-1]
-            states = state.reshape(-1,d_state)
-            d_goal = goal.shape[-1]
-            goal = goal.reshape(-1, d_goal)
-            with torch.no_grad():
-                state = torch.FloatTensor(states).to(self.device)
-                goal = torch.FloatTensor(goal).to(self.device)
-                action, _, mean = self.actor.sample(state, goal)
-                action = action.squeeze().detach().cpu().numpy()
-                mean = mean.squeeze().detach().cpu().numpy()
-                # print("model output", action)
-                # print("model mean", mean)
-
-            if is_training:
-                acc[0] = float(action[0]*acc_x_mult + acc_x_bias)
-                acc[1] = float(action[1]*acc_y_mult + acc_y_bias)
-                acc[2] = float(action[2]*acc_w_mult + acc_w_bias)
+            self.new_subgoal = False
+        
+        if self.new_subgoal:
+            if abs(goal_angle) > math.pi/20:
+                if goal_angle > 0:
+                    vel = [0.0, 0.0, 0.3]
+                else:
+                    vel = [0.0, 0.0, -0.3]
             else:
-                acc[0] = float(mean[0]*acc_x_mult + acc_x_bias)
-                acc[1] = float(mean[1]*acc_y_mult + acc_y_bias)
-                acc[2] = float(mean[2]*acc_w_mult + acc_w_bias)
+                if not robot_safe:
+                    vel = [-0.1, 0.0, 0.0]
+                else:
+                    angle = (tmp_index[s]/360 - 0.5)*math.pi + robot_heading
+                    print("angle:", angle)
+                    # distance = np.clip(pre_scan[s]*LIDAR_DISTANCE_CAP/MAX_GOAL_DISTANCE,0,1)
+                    self.subgoal_xy = [robot_x + math.cos(angle)*LIDAR_DISTANCE_CAP, robot_y + math.sin(angle)*LIDAR_DISTANCE_CAP]
+                    self.subgoal = self.cal_subgoal([robot_x, robot_y], self.subgoal_xy, robot_heading)
+                    self.new_subgoal = False
+                    print("subgoal_xy:", self.subgoal_xy)
+                    print("subgoal:", self.subgoal)
+            for i in range(len(vel)):
+                acc[i] = (vel[i] - float(pre_vel[i]))/0.1
+            action[0] = (acc[0] - acc_x_bias)/acc_x_mult
+            action[1] = (acc[1] - acc_y_bias)/acc_y_mult
+            action[2] = (acc[2] - acc_w_bias)/acc_w_mult
 
-        return acc, action
+        if not play_in_rule:
+            if total_step < warm_step:
+                action = self.get_action_random()
+                acc[0] = action[0]*acc_x_mult + acc_x_bias
+                acc[1] = action[1]*acc_y_mult + acc_y_bias
+                acc[2] = action[2]*acc_w_mult + acc_w_bias
+                # print("random acc", acc)
+            else:
+                state = np.asarray(state, np.float32)
+                goal = np.asarray(goal, np.float32)
+                d_state = state.shape[-1]
+                states = state.reshape(-1,d_state)
+                d_goal = goal.shape[-1]
+                goal = goal.reshape(-1, d_goal)
+                with torch.no_grad():
+                    state = torch.FloatTensor(states).to(self.device)
+                    goal = torch.FloatTensor(goal).to(self.device)
+                    action, _, mean = self.actor.sample(state, goal)
+                    action = action.squeeze().detach().cpu().numpy()
+                    mean = mean.squeeze().detach().cpu().numpy()
+                    # print("model output", action)
+                    # print("model mean", mean)
+
+                if is_training:
+                    acc[0] = float(action[0]*acc_x_mult + acc_x_bias)
+                    acc[1] = float(action[1]*acc_y_mult + acc_y_bias)
+                    acc[2] = float(action[2]*acc_w_mult + acc_w_bias)
+                else:
+                    acc[0] = float(mean[0]*acc_x_mult + acc_x_bias)
+                    acc[1] = float(mean[1]*acc_y_mult + acc_y_bias)
+                    acc[2] = float(mean[2]*acc_w_mult + acc_w_bias)
+        else:
+            if abs(self.subgoal[1]) > math.pi/20:
+                if self.subgoal[1] > 0:
+                    vel = [0.0, 0.0, 0.3]
+                else:
+                    vel = [0.0, 0.0, -0.3]
+            else:
+                vel = [1.0, 0.0, 0.0]
+            for i in range(len(vel)):
+                acc[i] = (vel[i] - float(pre_vel[i]))/0.1
+            action[0] = (acc[0] - acc_x_bias)/acc_x_mult
+            action[1] = (acc[1] - acc_y_bias)/acc_y_mult
+            action[2] = (acc[2] - acc_w_bias)/acc_w_mult
+                
+        return acc, action, vel
 
     # TODO:随机加速度
     def get_action_random(self):

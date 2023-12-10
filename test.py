@@ -35,6 +35,10 @@ print(a)
 
 
 a = [1,2,3,4,6,5,7,8,9,10]
+c = np.array(a).min()
+# b = np.mean(a[2:4])
+# print(min(a))
+print(c)
 
-b = np.mean(a[2:4])
-print(min(a))
+d = math.sin(1.57)
+print(d)

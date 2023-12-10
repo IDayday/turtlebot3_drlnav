@@ -226,8 +226,8 @@ def get_reward_E(succeed, state_tmp_list, goal_dist, goal_angle, min_obstacle_di
         r_vlinear = r_vlinear_x + r_vlinear_y
 
         reward = 1*r_yaw + 3*r_distance + 0.2*r_obstacle + 0.1*r_vlinear + 4*r_vangular + 0.2*r_acc + 0.05*r_scan - 3
-        print(f"r_yaw {round(1*r_yaw,4)}, r_distance{round(3*r_distance,4)}, \
-              r_vlinear{round(0.1*r_vlinear,4)}, r_vangular{round(4*r_vangular,4)}, r_acc{round(0.2*r_acc,4)}, r_scan{round(0.05*r_scan,4)}")
+        # print(f"r_yaw {round(1*r_yaw,4)}, r_distance{round(3*r_distance,4)}, \
+        #       r_vlinear{round(0.1*r_vlinear,4)}, r_vangular{round(4*r_vangular,4)}, r_acc{round(0.2*r_acc,4)}, r_scan{round(0.05*r_scan,4)}")
 
         if succeed == SUCCESS:
             v_linear = math.sqrt(vx**2 + vy**2)

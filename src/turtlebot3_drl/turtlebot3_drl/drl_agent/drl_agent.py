@@ -115,7 +115,7 @@ class DrlAgent(Node):
             self.gazebo_pause = self.create_client(Empty, '/pause_physics')
             self.gazebo_unpause = self.create_client(Empty, '/unpause_physics')
         if self.training:
-            episode_num = 2000
+            episode_num = 10000
         else:
             episode_num = 100
         self.process(episode_num)
@@ -124,6 +124,8 @@ class DrlAgent(Node):
     def process(self, episode_num):
         util.pause_simulation(self, self.real_robot)
         episode = 0
+        greedy = 0.8
+        play_in_rule = False
         while episode < episode_num:
             util.wait_new_goal(self)
             episode_done = False
@@ -141,14 +143,21 @@ class DrlAgent(Node):
             util.unpause_simulation(self, self.real_robot)
             time.sleep(0.5)
             episode_start = time.perf_counter()
-
+            g = np.random.uniform(0,1)
+            # print("g", g)
+            if g < greedy:
+                play_in_rule = True
+            else:
+                play_in_rule = False
+            print("play in rule:", play_in_rule)
             while not episode_done:
-                acc, action = self.model.get_action(state, goal, step, self.training, self.total_steps, self.warm_steps)
+                acc, action, vel = self.model.get_action(state, goal, step, self.training, self.total_steps, self.warm_steps, play_in_rule)
                 # print("acc", acc)
                 # print("vel_past", vel_past)
-                for i in range(3):
-                    v = vel_past[i] + acc[i]*self.model.step_time
-                    vel[i] = v
+                if not play_in_rule:
+                    for i in range(3):
+                        v = vel_past[i] + acc[i]*self.model.step_time
+                        vel[i] = v
                 
                 action_env = np.array(copy.deepcopy(vel))
 
@@ -170,10 +179,10 @@ class DrlAgent(Node):
                     for depth in range(self.model.stack_depth):
                         start = self.model.state_size * (self.model.frame_skip - 1) + (self.model.state_size * self.model.frame_skip * depth)
                         next_state += frame_buffer[start : start + self.model.state_size]
-
+                state = copy.deepcopy(next_state)
                 # Train
                 if self.training == True:
-                    self.replay_buffer.add_sample(state, goal, action, [reward], next_state, [episode_done])
+                    self.replay_buffer.add_sample(state[:-5], goal, action, [reward], next_state[:-5], [episode_done])
                     if self.replay_buffer.get_length() >= self.model.batch_size and self.total_steps > self.warm_steps+self.pretrain_steps:
                         loss_c, loss_a, = self.model._train(self.replay_buffer)
                         loss_critic += loss_c
@@ -181,7 +190,6 @@ class DrlAgent(Node):
 
                 if ENABLE_VISUAL:
                     self.visual.update_reward(reward_sum)
-                state = copy.deepcopy(next_state)
                 step += 1
                 time.sleep(self.model.step_time)
 

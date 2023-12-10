@@ -6,7 +6,7 @@ import os
 import time
 import rclpy
 import torch
-import numpy
+import numpy as np
 from ..common.settings import REWARD_FUNCTION, COLLISION_OBSTACLE, COLLISION_WALL, TUMBLE, SUCCESS, TIMEOUT, RESULTS_NUM
 
 import xml.etree.ElementTree as ET
@@ -120,18 +120,18 @@ def euler_from_quaternion(quat):
 
     sinr_cosp = 2 * (w*x + y*z)
     cosr_cosp = 1 - 2*(x*x + y*y)
-    roll = numpy.arctan2(sinr_cosp, cosr_cosp)
+    roll = np.arctan2(sinr_cosp, cosr_cosp)
 
     sinp = 2 * (w*y - z*x)
     if sinp < -1:
         sinp = -1
     if sinp > 1:
         sinp = 1
-    pitch = numpy.arcsin(sinp)
+    pitch = np.arcsin(sinp)
 
     siny_cosp = 2 * (w*z + x*y)
     cosy_cosp = 1 - 2 * (y*y + z*z)
-    yaw = numpy.arctan2(siny_cosp, cosy_cosp)
+    yaw = np.arctan2(siny_cosp, cosy_cosp)
 
     return roll, pitch, yaw
 
@@ -161,3 +161,15 @@ def get_simulation_speed(stage):
     tree = ET.parse(os.getenv('DRLNAV_BASE_PATH') + '/src/turtlebot3_simulations/turtlebot3_gazebo/worlds/turtlebot3_drl_stage' + str(stage) + '/burger.model')
     root = tree.getroot()
     return int(root.find('world').find('physics').find('real_time_factor').text)
+
+
+def filter_scan(real_scan):
+    length = np.array(real_scan).shape[0]
+    while length != 360:
+        del_num = length - 360
+        gap = length//del_num + 1
+        del_index = np.arange(0, length, gap)
+        outcome = np.delete(real_scan, del_index)
+        length = outcome.shape[0]
+        real_scan = outcome
+    return outcome

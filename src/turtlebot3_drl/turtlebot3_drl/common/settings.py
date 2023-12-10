@@ -31,7 +31,7 @@ SPEED_LINEAR_X_BOUND        = [-0.1,1.5]   # m/s 线速度X区间
 SPEED_LINEAR_Y_BOUND        = [-0.1,0.1]   # m/s 线速度Y区间
 SPEED_ANGULAR_BOUND         = [-0.5,0.5]   # rad/s 角速度最大值
 
-LIDAR_DISTANCE_CAP          = 3.5   # meters 雷达探测范围
+LIDAR_DISTANCE_CAP          = 4   # meters 雷达探测范围
 THRESHOLD_COLLISION         = 0.30  # meters 障碍物碰撞判定距离
 THREHSOLD_GOAL              = 0.70  # meters 目标抵达判定距离
 THREHSOLD_GOALHEADING       = 0.174 # rad    目标抵达角度判定
