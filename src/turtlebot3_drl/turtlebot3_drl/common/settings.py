@@ -11,7 +11,7 @@ MODEL_STORE_INTERVAL     = 100      # Store the model weights every N episodes
 GRAPH_DRAW_INTERVAL      = 10       # Draw the graph every N episodes (drawing too often will slow down training)
 GRAPH_AVERAGE_REWARD     = 10       # Average the reward graph over every N episodes
 FINTUEN_ON_SAME_SETTING  = False
-
+PROJECT_PATH             = "/home/dayday/project/turtlebot3_drlnav/src/turtlebot3_drl/turtlebot3_drl"
 # ===================================================================== #
 #                         ENVIRONMENT SETTINGS                          #
 # ===================================================================== #

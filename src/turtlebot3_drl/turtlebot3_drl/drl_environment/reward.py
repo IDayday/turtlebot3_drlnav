@@ -206,7 +206,7 @@ def get_reward_E(succeed, state_tmp_list, goal_dist, goal_angle, min_obstacle_di
         r_yaw = -1 * abs(goal_angle)
 
         # [-0.5, 0]
-        r_vangular = -1 * abs(vw)
+        r_vangular = - (4 * abs(vw) + 0.1)
 
         # [-1, 1]
         # p_goal_distance = state[-14]
@@ -218,33 +218,30 @@ def get_reward_E(succeed, state_tmp_list, goal_dist, goal_angle, min_obstacle_di
         else:
             r_obstacle = 0
         
-        if vx < 0:
-             r_vlinear_x = -20 * abs(vx)
-        else:
-             r_vlinear_x = -0.1 * vx
-        r_vlinear_y = -20 * abs(vy)
+        r_vlinear_x = - (3 * (vx-0.7)**2+0.1)
+        r_vlinear_y = - (20 * abs(vy)+0.1)
         r_vlinear = r_vlinear_x + r_vlinear_y
 
-        reward = 1*r_yaw + 3*r_distance + 0.2*r_obstacle + 0.1*r_vlinear + 4*r_vangular + 0.2*r_acc + 0.05*r_scan - 3
-        print(f"r_yaw {round(1*r_yaw,4)}, r_distance{round(3*r_distance,4)}, \
-              r_vlinear{round(0.1*r_vlinear,4)}, r_vangular{round(4*r_vangular,4)}, r_acc{round(0.2*r_acc,4)}, r_scan{round(0.05*r_scan,4)}")
+        reward = 0.05*r_yaw + 0.5*r_distance + 0.15*r_obstacle + 0.05*r_vlinear + 0.1*r_vangular + 0.1*r_acc + 0.05*r_scan - 0.5
+        # print(f"r_yaw {round(0.5*r_yaw,4)}, r_distance{round(1*r_distance,4)}, \
+        #       r_vlinear{round(1*r_vlinear,4)}, r_vangular{round(1.5*r_vangular,4)}, r_acc{round(1*r_acc,4)}, r_scan{round(0.05*r_scan,4)}")
 
         if succeed == SUCCESS:
             v_linear = math.sqrt(vx**2 + vy**2)
             if abs(goal_angle) < THREHSOLD_GOALHEADING and v_linear < 0.3:
-                reward += 1500
+                reward += 4500
             elif v_linear < 0.3:
-                reward += 1200
+                reward += 4200
             elif abs(goal_angle) < THREHSOLD_GOALHEADING:
-                reward += 1000
+                reward += 3000
             else:
-                reward += 800
+                reward += 2800
         elif succeed == COLLISION_OBSTACLE or succeed == COLLISION_WALL:
             reward -= 800
         elif succeed == TUMBLE:
             reward -= 1000
         elif succeed == TIMEOUT:
-            reward -= 500
+            reward -= 800
         return float(reward)
 
 

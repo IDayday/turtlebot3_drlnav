@@ -24,7 +24,7 @@ import numpy as np
 import random
 import torch
 from ..common.settings import ENABLE_VISUAL, ENABLE_STACKING, WARM_STEPS, MODEL_STORE_INTERVAL, GRAPH_DRAW_INTERVAL, SPEED_LINEAR_X_BOUND, SPEED_LINEAR_Y_BOUND,\
-                                SPEED_ANGULAR_BOUND, FINTUEN_ON_SAME_SETTING
+                                SPEED_ANGULAR_BOUND, FINTUEN_ON_SAME_SETTING, BUFFER_SIZE
 
 from ..common.storagemanager import StorageManager
 from ..common.graph import Graph
@@ -42,7 +42,7 @@ from std_srvs.srv import Empty
 
 import rclpy
 from rclpy.node import Node
-from ..common.replaybuffer import ReplayBuffer
+from ..common.replaybuffer import HERReplayBuffer, PathBuilder
 
 class DrlAgent(Node):
     def __init__(self, training, algorithm, load_session="", load_episode=0, real_robot=0):
@@ -73,7 +73,19 @@ class DrlAgent(Node):
 
         self.model = DDPG(self.device, self.sim_speed)
 
-        self.replay_buffer = ReplayBuffer(self.model.buffer_size)
+        # Initialize replay buffer and path_builder
+        self.replay_buffer = HERReplayBuffer(
+                                max_size=BUFFER_SIZE,
+                                fraction_goals_are_rollout_goals = 0.2,
+                                fraction_resampled_goals_are_env_goals = 0.0,
+                                fraction_resampled_goals_are_replay_buffer_goals = 0.5,
+                                ob_keys_to_save     =["state_achieved_goal", "state_desired_goal"],
+                                desired_goal_keys   =["desired_goal", "state_desired_goal"],
+                                observation_key     = 'observation',
+                                desired_goal_key    = 'desired_goal',
+                                achieved_goal_key   = 'achieved_goal',
+                            )
+        self.path_builder = PathBuilder()
         self.graph = Graph()
         # ===================================================================== #
         #                             Model loading                             #
@@ -164,6 +176,17 @@ class DrlAgent(Node):
                 vel_past = copy.deepcopy(vel_current)
                 reward_sum += reward
 
+                # Add a sample
+                path_builder.add_all(
+                    states=state[:-2],
+                    actions=action,
+                    rewards=reward,
+                    next_states=next_state,
+                    terminals=[1.0*episode_done],
+                    steps=step,
+                    robotxy=state[-2:]
+                )               
+
                 if ENABLE_STACKING:
                     frame_buffer = frame_buffer[self.model.state_size:] + list(next_state)      # Update big buffer with single step
                     next_state = []                                                         # Prepare next set of frames (state)
@@ -189,6 +212,8 @@ class DrlAgent(Node):
             util.pause_simulation(self, self.real_robot)
             self.total_steps += step
             duration = time.perf_counter() - episode_start
+            self.replay_buffer.add_path(path_builder.get_all_stacked())
+            path_builder = PathBuilder()            
 
             self.finish_episode(step, duration, outcome, distance_traveled, reward_sum, loss_critic, loss_actor)
             episode += 1

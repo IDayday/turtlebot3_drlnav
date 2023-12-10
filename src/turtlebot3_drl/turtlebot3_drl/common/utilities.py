@@ -161,3 +161,5 @@ def get_simulation_speed(stage):
     tree = ET.parse(os.getenv('DRLNAV_BASE_PATH') + '/src/turtlebot3_simulations/turtlebot3_gazebo/worlds/turtlebot3_drl_stage' + str(stage) + '/burger.model')
     root = tree.getroot()
     return int(root.find('world').find('physics').find('real_time_factor').text)
+
+
