@@ -90,7 +90,7 @@ def get_reward_C(succeed, action_linear_x, action_linear_y, action_angular, goal
         elif succeed == COLLISION_OBSTACLE or succeed == COLLISION_WALL or succeed == TUMBLE:
             reward -= 500
         elif succeed == TIMEOUT :
-             reward -= 300
+             reward -= 0
         return float(reward)
 
 def reward_initalize(init_distance_to_goal):

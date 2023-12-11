@@ -172,12 +172,9 @@ class DRLGazebo(Node):
         elif self.warm_times + 2*self.learning_times< self.reset_env_times <= self.warm_times + 3*self.learning_times:
             goal_x = random.randrange(-50, 50) / 10.0   # random.randrange返回随机整数
             goal_y = random.randrange(-50, 50) / 10.0
-        elif self.warm_times + 3*self.learning_times< self.reset_env_times <= self.warm_times + 4*self.learning_times:
-            goal_x = random.randrange(-60, 60) / 10.0   # random.randrange返回随机整数
-            goal_y = random.randrange(-60, 60) / 10.0
-        elif self.warm_times + 4*self.learning_times<= self.reset_env_times:
-            goal_x = random.randrange(-65, 65) / 10.0   # random.randrange返回随机整数
-            goal_y = random.randrange(-65, 65) / 10.0
+        elif self.warm_times + 3*self.learning_times< self.reset_env_times:
+            goal_x = random.randrange(-55, 55) / 10.0   # random.randrange返回随机整数
+            goal_y = random.randrange(-55, 55) / 10.0
         return goal_x , goal_y
 
     # 生成随机目标
@@ -186,14 +183,19 @@ class DRLGazebo(Node):
         self.prev_y = self.goal_y
         tries = 0
         self.goal_x , self.goal_y = self.random_goals()
-        while not self.goal_is_valid(self.goal_x, self.goal_y):
+        # if self.train:
+        #     self.goal_x , self.goal_y = self.random_goals()
+        # else:
+        #     self.goal_x = random.randrange(-55, 55) / 10.0
+        #     self.goal_y = random.randrange(-55, 55) / 10.0
+        while ((abs(self.prev_x - self.goal_x) + abs(self.prev_y - self.goal_y)) < 3) or (not self.goal_is_valid(self.goal_x, self.goal_y)):
             self.goal_x , self.goal_y = self.random_goals()
-        tries += 1
-        if tries > 200:
-            print("ERROR: cannot find valid new goal, resestting!")
-            self.delete_entity()
-            self.reset_simulation()
-            self.generate_goal_pose()
+            tries += 1
+            if tries > 200:
+                print("ERROR: cannot find valid new goal, resestting!")
+                self.delete_entity()
+                self.reset_simulation()
+                self.generate_goal_pose()
 
         self.publish_callback()
 

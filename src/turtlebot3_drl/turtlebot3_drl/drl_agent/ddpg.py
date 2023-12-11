@@ -1,6 +1,6 @@
 import numpy as np
 import copy
-
+import math
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
@@ -22,9 +22,9 @@ class Actor(Network):
     def __init__(self, name, state_size, action_size, hidden_size):
         super(Actor, self).__init__(name)
         # --- define layers here ---
-        self.fa1 = nn.Linear(state_size-5, hidden_size)
-        self.fa2 = nn.Linear(hidden_size, 32)
-        self.fa3 = nn.Linear(32+5, action_size)
+        self.fa1 = nn.Linear(state_size, hidden_size)
+        self.fa2 = nn.Linear(hidden_size, int(hidden_size//2))
+        self.fa3 = nn.Linear(int(hidden_size//2), action_size)
         # --- define layers until here ---
 
         self.apply(super().init_weights)
@@ -33,12 +33,9 @@ class Actor(Network):
     # TODO: x速度后处理
     def forward(self, states, visualize=False):
         # --- define forward pass here ---
-        scan = states[:,:-5]
-        other = states[:,-5:]
-        x1 = torch.relu(self.fa1(scan))
-        x2 = torch.tanh(self.fa2(x1))
-        concat = torch.cat([x2, other],dim=-1)
-        action = torch.tanh(self.fa3(concat))
+        x1 = torch.relu(self.fa1(states))
+        x2 = torch.relu(self.fa2(x1))
+        action = torch.tanh(self.fa3(x2))
 
         # -- define layers to visualize here (optional) ---
         if visualize and self.visual:
@@ -51,24 +48,20 @@ class Critic(Network):
         super(Critic, self).__init__(name)
 
         # --- define layers here ---
-        self.l1 = nn.Linear(state_size-5, int(hidden_size / 2))
-        self.l2 = nn.Linear(int(hidden_size / 2), 32)
-        self.l3 = nn.Linear(32+5+action_size, int(hidden_size / 2))
-        self.l4 = nn.Linear(int(hidden_size / 2), 1)
+        self.fa1 = nn.Linear(state_size+action_size, hidden_size)
+        self.fa2 = nn.Linear(hidden_size, int(hidden_size//2))
+        self.fa3 = nn.Linear(int(hidden_size//2), 1)
         # --- define layers until here ---
 
         self.apply(super().init_weights)
 
     def forward(self, states, actions):
         # --- define forward pass here ---
-        scan = states[:,:-5]
-        other = states[:,-5:]
-        xs = torch.relu(self.l1(scan))
-        xss = torch.tanh(self.l2(xs))
-        concat = torch.cat([xss, other, actions], dim=-1)
-        x = torch.relu(self.l3(concat))
-        x = self.l4(x)
-        return x
+        concat = torch.cat([states, actions], dim=-1)
+        x1 = torch.relu(self.fa1(concat))
+        x2 = torch.relu(self.fa2(x1))
+        value = torch.tanh(self.fa3(x2))
+        return value
 
 
 class DDPG(OffPolicyAgent):
@@ -88,23 +81,52 @@ class DDPG(OffPolicyAgent):
         self.hard_update(self.actor_target, self.actor)
         self.hard_update(self.critic_target, self.critic)
 
-    def get_action(self, state, is_training, step, visualize=False):
-        state = torch.from_numpy(np.asarray(state, np.float32)).to(self.device)
-        d = state.shape[-1]
-        states = state.reshape(-1,d)
-        action = self.actor(states, visualize).squeeze()
-        if is_training:
-            noise = torch.from_numpy(copy.deepcopy(self.noise.get_noise(step))).to(self.device)
-            action = torch.clamp(torch.add(action, noise), -1.0, 1.0)
-        return action.detach().cpu().data.numpy().tolist()
+    def cal_safe(self, scan, threshold=0.1):
+        robot_safe = False
+        tmp_index = []
+        for i in range(len(scan)-20):
+            ds = np.mean(scan[i:i+20])
+            if ds > threshold:
+                tmp_index.append(i+10)
+        if len(tmp_index) > 0:
+            robot_safe = True
+        return robot_safe, tmp_index
+
+    def get_action(self, state, is_training, step, visualize=False, play_in_rule=False):
+        if play_in_rule:
+            robot_safe, _ = self.cal_safe(state[0:-5], 0.1)
+            if abs(state[-4]) > math.pi/20:
+                if state[-4] > 0:
+                    vel = [0.0, 0.3]
+                else:
+                    vel = [0.0, -0.3]
+            elif not robot_safe:
+                vel = [-0.1, 0.0]
+            else:
+                vel = [1.0, 0.0]
+            action = vel
+        else:
+            state = torch.from_numpy(np.asarray(state, np.float32)).to(self.device)
+            d = state.shape[-1]
+            states = state.reshape(-1,d)
+            action = self.actor(states, visualize).squeeze()
+            if is_training:
+                noise = torch.from_numpy(copy.deepcopy(self.noise.get_noise(step))).to(self.device)
+                action = torch.clamp(torch.add(action, noise), -1.0, 1.0)
+            action = action.detach().cpu().data.numpy().tolist()
+        
+        return action
 
     # TODO:随机动作
     def get_action_random(self):
+        # random_x = np.random.uniform(-1.0, 1.0)
+        # random_y = np.random.uniform(-1.0, 1.0)
+        # random_yaw = np.random.uniform(-1.0, 1.0)
+        # random_action = [random_x, random_y, random_yaw]
+
         random_x = np.random.uniform(-1.0, 1.0)
-        random_y = np.random.uniform(-1.0, 1.0)
-        
         random_yaw = np.random.uniform(-1.0, 1.0)
-        random_action = [random_x, random_y, random_yaw]
+        random_action = [random_x, random_yaw]
 
         # action_list = [[0.5, 0.0, 0.0], [0.4, 0.2, 0.0], [0.2, 0.4, 0.0], [0.0, 0.5, 0.0], 
         #                [0.4, -0.2, 0.0], [0.2, -0.4, 0.0], [0.0, -0.5, 0.0], 

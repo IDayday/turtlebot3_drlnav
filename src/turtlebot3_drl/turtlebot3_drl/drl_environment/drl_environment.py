@@ -17,7 +17,7 @@
 # Authors: Ryan Shim, Gilbert, Tomas
 import os
 import math
-import numpy
+import numpy as np
 import sys
 import copy
 from numpy.core.numeric import Infinity
@@ -175,7 +175,7 @@ class DRLEnvironment(Node):
         # normalize laser values
         self.obstacle_distance = 1
         for i in range(NUM_SCAN_SAMPLES):
-                self.scan_ranges[i] = numpy.clip(float(msg.ranges[i]) / LIDAR_DISTANCE_CAP, 0, 1)
+                self.scan_ranges[i] = np.clip(float(msg.ranges[i]) / LIDAR_DISTANCE_CAP, 0, 1)
                 if self.scan_ranges[i] < self.obstacle_distance:
                     self.obstacle_distance = self.scan_ranges[i]
         # print("min obstacle_distance", self.obstacle_distance)
@@ -191,7 +191,7 @@ class DRLEnvironment(Node):
             return
         episode_time = self.episode_timeout
         if ENABLE_DYNAMIC_GOALS:
-            episode_time = numpy.clip(episode_time * self.difficulty_radius, 10, 50)
+            episode_time = np.clip(episode_time * self.difficulty_radius, 10, 50)
         self.episode_deadline = self.time_sec + episode_time
         self.reset_deadline = False
         self.clock_msgs_skipped = 0
@@ -208,7 +208,7 @@ class DRLEnvironment(Node):
         if success != 1:
             self.robot_x_tmp += self.robot_x
             self.robot_y_tmp += self.robot_y
-        req.radius = numpy.clip(self.difficulty_radius, 0.5, 4)
+        req.radius = np.clip(self.difficulty_radius, 0.5, 4)
         if success:
             self.difficulty_radius *= 1.01
             while not self.task_succeed_client.wait_for_service(timeout_sec=1.0):
@@ -222,8 +222,14 @@ class DRLEnvironment(Node):
 
     # TODO: state
     def get_state(self, action_linear_previous, action_angular_previous):
-        state = copy.deepcopy(self.scan_ranges)                                             # range: [ 0, 1]
-        state.append(float(numpy.clip((self.goal_distance / MAX_GOAL_DISTANCE), 0, 1)))     # range: [ 0, 1]
+        # preprocess scan
+        pre_scan = []
+        scan = copy.deepcopy(self.scan_ranges)  
+        for i in range(0,len(self.scan_ranges),10):
+            pre_scan.append(float(np.mean(scan[i:i+10])))
+        state = pre_scan
+        # state = copy.deepcopy(self.scan_ranges)                                             # range: [ 0, 1]
+        state.append(float(np.clip((self.goal_distance / MAX_GOAL_DISTANCE), 0, 1)))     # range: [ 0, 1]
         state.append(float(self.goal_angle) / math.pi)                                      # range: [-1, 1]
         # state.append(float(self.goal_x - self.robot_x))
         # state.append(float(self.goal_y - self.robot_y))
@@ -275,8 +281,8 @@ class DRLEnvironment(Node):
             return self.initalize_episode(response)
 
         if ENABLE_MOTOR_NOISE:
-            request.action[LINEAR_X] += numpy.clip(numpy.random.normal(0, 0.05), -0.1, 0.1)
-            request.action[LINEAR_Y] += numpy.clip(numpy.random.normal(0, 0.05), -0.1, 0.1)
+            request.action[LINEAR_X] += np.clip(np.random.normal(0, 0.05), -0.1, 0.1)
+            request.action[LINEAR_Y] += np.clip(np.random.normal(0, 0.05), -0.1, 0.1)
             # request.action[ANGULAR] += numpy.clip(numpy.random.normal(0, 0.05), -0.1, 0.1)
 
         # Un-normalize actions

@@ -20,7 +20,7 @@ import torch.nn.functional as torchf
 
 from turtlebot3_drl.drl_environment.reward import REWARD_FUNCTION
 from ..common.settings import ENABLE_BACKWARD, ENABLE_STACKING, ACTION_SIZE, HIDDEN_SIZE, BATCH_SIZE, BUFFER_SIZE, DISCOUNT_FACTOR, \
-                                 LEARNING_RATE, TAU, STEP_TIME, EPSILON_DECAY, EPSILON_MINIMUM, STACK_DEPTH, FRAME_SKIP
+                                 LEARNING_RATE, TAU, STEP_TIME, EPSILON_DECAY, EPSILON_MINIMUM, STACK_DEPTH, FRAME_SKIP, STATE_SIZE
 from ..drl_environment.drl_environment import NUM_SCAN_SAMPLES
 
 
@@ -32,7 +32,7 @@ class OffPolicyAgent(ABC):
 
         # Network structure
         # TODO: 网络参数：输入输出
-        self.state_size         = NUM_SCAN_SAMPLES + 5
+        self.state_size         = STATE_SIZE + 5
         self.action_size        = ACTION_SIZE
         self.hidden_size        = HIDDEN_SIZE
         self.input_size         = self.state_size
