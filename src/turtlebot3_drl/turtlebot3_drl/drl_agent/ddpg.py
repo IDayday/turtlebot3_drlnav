@@ -268,6 +268,8 @@ class DDPG(OffPolicyAgent):
                     vel = [0.0, 0.0, 0.3]
                 else:
                     vel = [0.0, 0.0, -0.3]
+            elif not robot_safe:
+                vel = [-0.1, 0.0, 0.0]
             else:
                 vel = [1.0, 0.0, 0.0]
             for i in range(len(vel)):
