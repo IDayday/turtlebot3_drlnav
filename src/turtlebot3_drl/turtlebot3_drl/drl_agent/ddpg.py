@@ -121,7 +121,7 @@ class DDPG(OffPolicyAgent):
 
         random_x = np.random.uniform(-1.0, 1.0)
         random_yaw = np.random.uniform(-1.0, 1.0)
-        random_action = [random_x, 0.0, random_yaw]
+        random_action = [random_x, random_yaw]
 
         # action_list = [[0.5, 0.0, 0.0], [0.4, 0.2, 0.0], [0.2, 0.4, 0.0], [0.0, 0.5, 0.0], 
         #                [0.4, -0.2, 0.0], [0.2, -0.4, 0.0], [0.0, -0.5, 0.0], 

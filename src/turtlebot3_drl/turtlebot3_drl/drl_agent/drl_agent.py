@@ -129,7 +129,7 @@ class DrlAgent(Node):
             time.sleep(0.5)
             episode_start = time.perf_counter()
 
-            if np.random.uniform(0,1) < 0.1:
+            if np.random.uniform(0,1) < 0.1 and self.total_steps >= self.warm_steps:
                 play_in_rule = True
                 print("play_in_rule:", play_in_rule)
             while not episode_done:
@@ -137,13 +137,15 @@ class DrlAgent(Node):
                     action = self.model.get_action_random()                                    # x[-1.0,1.0]
                 else:
                     action = self.model.get_action(state, self.training, step, ENABLE_VISUAL, play_in_rule)  # x[-1,1]
-
-                action_env = [0.0, 0.0, 0.0]
-                action_env[0] = action[0]*(1.6/2) + (-0.1 + 1.5)/2                         # x[-0.1,1.5]
-                action_env[2] = action[2]*(1.6/2)                                          # yaw[-0.8,0.8]
-                action_current = action_env
+                
                 if play_in_rule and self.total_steps >= self.warm_steps:
                     action_current = action
+                else:
+                    action_env = [0.0, 0.0, 0.0]
+                    action_env[0] = action[0]*(1.6/2) + (-0.1 + 1.5)/2                         # x[-0.1,1.5]
+                    action_env[2] = action[1]*(1.6/2)                                          # yaw[-0.8,0.8]
+                    action_current = action_env
+
                 if self.algorithm == 'dqn':
                     action_current = self.model.possible_actions[action]
 
