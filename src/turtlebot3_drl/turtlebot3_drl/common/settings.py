@@ -69,7 +69,7 @@ DISCOUNT_FACTOR = 0.99
 LEARNING_RATE   = 0.003
 TAU             = 0.003
 
-WARM_STEPS      = 100     # At training start random actions are taken for N steps for better exploration
+WARM_STEPS      = 5000     # At training start random actions are taken for N steps for better exploration
 STEP_TIME       = 0.1      # Delay between steps, can be set to 0  控制交互频率 初始100hz
 EPSILON_DECAY   = 0.9995    # Epsilon decay per step
 EPSILON_MINIMUM = 0.05

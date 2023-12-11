@@ -83,27 +83,22 @@ class DDPG(OffPolicyAgent):
 
     def cal_safe(self, scan, threshold=0.1):
         robot_safe = False
-        tmp_index = []
-        for i in range(len(scan)-20):
-            ds = np.mean(scan[i:i+20])
-            if ds > threshold:
-                tmp_index.append(i+10)
-        if len(tmp_index) > 0:
+        if np.min(scan) > threshold:
             robot_safe = True
-        return robot_safe, tmp_index
+        return robot_safe
 
     def get_action(self, state, is_training, step, visualize=False, play_in_rule=False):
         if play_in_rule:
-            robot_safe, _ = self.cal_safe(state[0:-5], 0.1)
+            robot_safe = self.cal_safe(state[0:-5], 0.1)
             if abs(state[-4]) > math.pi/20:
                 if state[-4] > 0:
-                    vel = [0.0, 0.3]
+                    vel = [0.0, 0.0, 0.3]
                 else:
-                    vel = [0.0, -0.3]
+                    vel = [0.0, 0.0, -0.3]
             elif not robot_safe:
-                vel = [-0.1, 0.0]
+                vel = [-0.1, 0.0, 0.0]
             else:
-                vel = [1.0, 0.0]
+                vel = [1.0, 0.0, 0.0]
             action = vel
         else:
             state = torch.from_numpy(np.asarray(state, np.float32)).to(self.device)
@@ -126,7 +121,7 @@ class DDPG(OffPolicyAgent):
 
         random_x = np.random.uniform(-1.0, 1.0)
         random_yaw = np.random.uniform(-1.0, 1.0)
-        random_action = [random_x, random_yaw]
+        random_action = [random_x, 0.0, random_yaw]
 
         # action_list = [[0.5, 0.0, 0.0], [0.4, 0.2, 0.0], [0.2, 0.4, 0.0], [0.0, 0.5, 0.0], 
         #                [0.4, -0.2, 0.0], [0.2, -0.4, 0.0], [0.0, -0.5, 0.0], 

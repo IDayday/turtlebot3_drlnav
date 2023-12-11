@@ -268,7 +268,7 @@ class DRLEnvironment(Node):
 
     def initalize_episode(self, response):
         self.initial_distance_to_goal = self.goal_distance
-        response.state = self.get_state([0,0], 0)
+        response.state = self.get_state([0.0 ,0.0], 0.0)
         response.reward = 0.0
         response.done = False
         response.distance_traveled = 0.0
@@ -280,20 +280,22 @@ class DRLEnvironment(Node):
         if len(request.action) == 0:
             return self.initalize_episode(response)
 
-        if ENABLE_MOTOR_NOISE:
-            request.action[LINEAR_X] += np.clip(np.random.normal(0, 0.05), -0.1, 0.1)
-            request.action[LINEAR_Y] += np.clip(np.random.normal(0, 0.05), -0.1, 0.1)
-            # request.action[ANGULAR] += numpy.clip(numpy.random.normal(0, 0.05), -0.1, 0.1)
+        # if ENABLE_MOTOR_NOISE:
+        #     request.action[LINEAR_X] += np.clip(np.random.normal(0, 0.05), -0.1, 0.1)
+        #     request.action[LINEAR_Y] += np.clip(np.random.normal(0, 0.05), -0.1, 0.1)
+        #     # request.action[ANGULAR] += numpy.clip(numpy.random.normal(0, 0.05), -0.1, 0.1)
 
-        # Un-normalize actions
-        if ENABLE_BACKWARD:
-            action_linear_x = request.action[LINEAR_X] * SPEED_LINEAR_MAX
-            action_linear_y = request.action[LINEAR_Y] * SPEED_LINEAR_MAX
-        else:
-            action_linear_x = (request.action[LINEAR_X] + 1) / 2 * SPEED_LINEAR_MAX
-            action_linear_y = (request.action[LINEAR_Y] + 1) / 2 * SPEED_LINEAR_MAX
-        action_angular = request.action[ANGULAR] * SPEED_ANGULAR_MAX
-
+        # # Un-normalize actions
+        # if ENABLE_BACKWARD:
+        #     action_linear_x = request.action[LINEAR_X] * SPEED_LINEAR_MAX
+        #     action_linear_y = request.action[LINEAR_Y] * SPEED_LINEAR_MAX
+        # else:
+        #     action_linear_x = (request.action[LINEAR_X] + 1) / 2 * SPEED_LINEAR_MAX
+        #     action_linear_y = (request.action[LINEAR_Y] + 1) / 2 * SPEED_LINEAR_MAX
+        # action_angular = request.action[ANGULAR] * SPEED_ANGULAR_MAX
+        action_linear_x = request.action[0]
+        action_linear_y = request.action[1]
+        action_angular = request.action[2]
         # Publish action cmd
         twist = Twist()
         twist.linear.x = action_linear_x

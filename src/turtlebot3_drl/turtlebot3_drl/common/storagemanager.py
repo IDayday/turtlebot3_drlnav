@@ -5,7 +5,7 @@ import pickle
 import socket
 import torch
 import shutil
-from ..common.utilities import PROJECT_PATH
+from ..common.settings import PROJECT_PATH
 
 class StorageManager:
     def __init__(self, name, load_session, load_episode, device, stage):

@@ -44,7 +44,7 @@ def step(agent_self, action, previous_action):
                 print("ERROR getting step service response!")
 
 def init_episode(agent_self):
-    state, _, _, _, _ = step(agent_self, [], [0.0, 0.0])
+    state, _, _, _, _ = step(agent_self, [], [0.0, 0.0, 0.0])
     return state
 
 def get_goal_status(agent_self):
