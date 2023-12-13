@@ -28,11 +28,11 @@ EPISODE_TIMEOUT_SECONDS     = 50    # Number of seconds after which episode time
 ARENA_LENGTH                = 16   # meters 地图大小/希望设置的目标范围大小
 ARENA_WIDTH                 = 16   # meters 地图大小
 SPEED_LINEAR_MAX            = 1.5  # m/s 线速度最大值
-SPEED_ANGULAR_MAX           = 0.5   # rad/s 角速度最大值
+SPEED_ANGULAR_MAX           = 0.8   # rad/s 角速度最大值
 
 LIDAR_DISTANCE_CAP          = 3.5   # meters 雷达探测范围
 THRESHOLD_COLLISION         = 0.30  # meters 障碍物碰撞判定距离
-THREHSOLD_GOAL              = 0.70  # meters 目标抵达判定距离
+THREHSOLD_GOAL              = 0.50  # meters 目标抵达判定距离
 
 OBSTACLE_RADIUS             = 0.3  # meters 障碍物半径（圆柱体）
 MAX_NUMBER_OBSTACLES        = 6     # 最多障碍物数量
@@ -44,15 +44,15 @@ REAL_TOPIC_VELO  = 'cmd_vel'
 REAL_TOPIC_ODOM  = 'odom_out'
 
 REAL_N_SCAN_SAMPLES         = 360    # LiDAR density count your robot is providing
-REAL_ARENA_LENGTH           = 50   # meters
-REAL_ARENA_WIDTH            = 50   # meters
+REAL_ARENA_LENGTH           = 16   # meters
+REAL_ARENA_WIDTH            = 16   # meters
 REAL_SPEED_LINEAR_MAX       = 1.5  # in m/s
-REAL_SPEED_ANGULAR_MAX      = 1.0   # in rad/s
+REAL_SPEED_ANGULAR_MAX      = 0.8   # in rad/s
 
-REAL_LIDAR_CORRECTION       = 0.40  # meters, subtracted from the real LiDAR values 激光雷达盲区？修正值？
+REAL_LIDAR_CORRECTION       = 0.0  # meters, subtracted from the real LiDAR values 激光雷达盲区？修正值？
 REAL_LIDAR_DISTANCE_CAP     = 3.5   # meters, scan distances are capped this value
-REAL_THRESHOLD_COLLISION    = 0.15  # meters, minimum distance to an object that counts as a collision
-REAL_THRESHOLD_GOAL         = 0.80  # meters, minimum distance to goal that counts as reaching the goal
+REAL_THRESHOLD_COLLISION    = 0.30  # meters, minimum distance to an object that counts as a collision
+REAL_THRESHOLD_GOAL         = 0.50  # meters, minimum distance to goal that counts as reaching the goal
 
 
 # ===================================================================== #
