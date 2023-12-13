@@ -4,6 +4,8 @@ import io
 import pickle
 import socket
 import torch
+import shutil
+from ..common.settings import PROJECT_PATH
 
 class StorageManager:
     def __init__(self, name, load_session, load_episode, device, stage):
@@ -20,6 +22,17 @@ class StorageManager:
         self.load_episode = load_episode
         self.session_dir = os.path.join(self.machine_dir, self.session)
         self.map_location = device
+
+        # save files
+        ddpg = PROJECT_PATH + "/drl_agent/ddpg.py"
+        agent = PROJECT_PATH + "/drl_agent/drl_agent.py"
+        env = PROJECT_PATH + "/drl_environment/drl_environment.py"
+        gazebo = PROJECT_PATH + "/drl_gazebo/drl_gazebo.py"
+        setting = PROJECT_PATH + "/common/settings.py"
+        reward = PROJECT_PATH + "/drl_environment/reward.py"
+        files = [ddpg, agent, env, gazebo, setting, reward]
+        for file in files:
+            shutil.copy(file, self.session_dir + "/" + file.split('/')[-1])
 
     def new_session_dir(self, stage):
         i = 0

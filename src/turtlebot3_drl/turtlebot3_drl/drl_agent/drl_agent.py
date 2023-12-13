@@ -105,12 +105,17 @@ class DrlAgent(Node):
         if not self.real_robot:
             self.gazebo_pause = self.create_client(Empty, '/pause_physics')
             self.gazebo_unpause = self.create_client(Empty, '/unpause_physics')
-        self.process()
+        if self.training:
+            episode_num = 100000
+        else:
+            episode_num = 200
+        self.process(episode_num)
 
 
-    def process(self):
+    def process(self, episode_num):
         util.pause_simulation(self, self.real_robot)
-        while (True):
+        episode = 0
+        while episode < episode_num:
             util.wait_new_goal(self)
             episode_done = False
             step, reward_sum, loss_critic, loss_actor = 0, 0, 0, 0
@@ -171,6 +176,7 @@ class DrlAgent(Node):
             duration = time.perf_counter() - episode_start
 
             self.finish_episode(step, duration, outcome, distance_traveled, reward_sum, loss_critic, loss_actor)
+            episode += 1
 
     def finish_episode(self, step, eps_duration, outcome, dist_traveled, reward_sum, loss_critic, lost_actor):
             if self.total_steps < self.observe_steps:
