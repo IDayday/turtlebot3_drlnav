@@ -30,6 +30,8 @@ from turtlebot3_msgs.srv import DrlStep, Goal
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, qos_profile_sensor_data
+from rclpy.time import Time
+import time
 
 from ..common import utilities as util
 from ..common.settings import ENABLE_BACKWARD, UNKNOWN, SUCCESS, COLLISION_WALL, REAL_ARENA_LENGTH, REAL_ARENA_WIDTH, \
@@ -57,7 +59,8 @@ class DRLEnvironment(Node):
         self.robot_heading = 0.0
         self.total_distance = 0.0
         self.robot_tilt = 0.0
-
+        self.latest_goal_time = 0.0
+        self.timeout = 0.3
         self.done = False
         self.succeed = UNKNOWN
 
@@ -97,6 +100,7 @@ class DRLEnvironment(Node):
         self.goal_distance = msg.pose.position.x
         self.goal_angle = -msg.pose.position.y
         self.new_goal = True
+        self.latest_goal_time = time.time()
         print(f"new goal! goal_distance: {self.goal_distance} goal_angle: {self.goal_angle}")
 
     def goal_pose_callback_bak(self, msg):
@@ -187,6 +191,10 @@ class DRLEnvironment(Node):
 
         if self.local_step <= 15: # Grace period to wait for fresh sensor input
             return state
+
+        if (time.time() - self.latest_goal_time) >= self.timeout:
+            print("Goal is overtime! ")
+            self.succeed = SUCCESS
         # Success
         if self.goal_distance < REAL_THRESHOLD_GOAL:
             print("Outcome: Goal reached! :)")
