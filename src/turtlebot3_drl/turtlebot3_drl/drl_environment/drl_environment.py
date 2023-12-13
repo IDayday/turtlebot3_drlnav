@@ -79,6 +79,8 @@ class DRLEnvironment(Node):
         self.goal_angle = 0.0
         self.goal_distance = MAX_GOAL_DISTANCE
         self.initial_distance_to_goal = MAX_GOAL_DISTANCE
+        self.v_linear_x = 0.0
+        self.v_linear_y = 0.0
 
         self.scan_ranges = [LIDAR_DISTANCE_CAP] * NUM_SCAN_SAMPLES
         self.obstacle_distance = LIDAR_DISTANCE_CAP
@@ -173,7 +175,6 @@ class DRLEnvironment(Node):
         # print("goal_x, goal_y", [self.goal_x, self.goal_y])
         # print("robot_x, robot_y", [self.robot_x, self.robot_y])
         # print("distance_to_goal", distance_to_goal)
-        print("goal_x, goal_y, robot_x, robot_y, distance_to_goal", [self.goal_x, self.goal_y], [self.robot_x, self.robot_y], distance_to_goal)
         self.goal_angle = goal_angle
 
     # TODO: 传感器数据处理
@@ -216,9 +217,9 @@ class DRLEnvironment(Node):
         # TODO: 修正里程计
         req.robot_pose_x = self.robot_x
         req.robot_pose_y = self.robot_y
-        if success != 1:
-            self.robot_x_tmp += self.robot_x
-            self.robot_y_tmp += self.robot_y
+        # if success != 1:
+        self.robot_x_tmp += self.robot_x
+        self.robot_y_tmp += self.robot_y
         req.radius = np.clip(self.difficulty_radius, 0.5, 4)
         # if success:
         #     self.difficulty_radius *= 1.01
@@ -252,10 +253,15 @@ class DRLEnvironment(Node):
 
         if self.local_step <= 30: # Grace period to wait for simulation reset
             return state
-        # Success
+        # print("goal_x, goal_y, robot_x, robot_y, distance_to_goal", [self.goal_x, self.goal_y], [self.robot_x, self.robot_y], distance_to_goal)
+        print(f"goal_x,goal_y:  [{self.goal_x:<4.2f}  {self.goal_y:<4.2f}] robot_x,robot_y: [{self.robot_x:<4.2f} {self.robot_y:<4.2f}] distance_to_goal: {self.goal_distance:<4.2f}")
+        # Success]
         # TODO: 增加成功判定
-        if self.goal_distance < THREHSOLD_GOAL and math.sqrt(pow(v_x,2)+pow(v_y,2))<=0.2:
-            self.succeed = SUCCESS
+        if self.goal_distance < THREHSOLD_GOAL:
+            # print("v_linear",math.sqrt(pow(v_x,2)+pow(v_y,2)))
+            print(f"v_x: {v_x :<3.1f}, v_y: {v_y :<3.1f}, v_linear: {math.sqrt(pow(v_x,2)+pow(v_y,2)):<3.1f} ")
+            if math.sqrt(pow(self.v_linear_x ,2)+pow( self.v_linear_y,2))<=0.2:
+                self.succeed = SUCCESS
         # Collision
         elif self.obstacle_distance < THRESHOLD_COLLISION:
             # print("obstacle_distance",self.obstacle_distance)
@@ -312,8 +318,8 @@ class DRLEnvironment(Node):
         else:
             action_linear_x = (request.action[LINEAR_X] + 1) / 2 * SPEED_LINEAR_MAX
             action_linear_y = (request.action[LINEAR_Y] + 1) / 2 * SPEED_LINEAR_MAX
-        action_linear_y = request.action[LINEAR_Y] * 0.1
-        action_angular = request.action[ANGULAR] * 0.5
+        action_linear_y = request.action[LINEAR_Y] * 0.3
+        action_angular = request.action[ANGULAR] * SPEED_ANGULAR_MAX
 
         # Publish action cmd
         twist = Twist()
@@ -321,7 +327,8 @@ class DRLEnvironment(Node):
         twist.linear.y = action_linear_y
         twist.angular.z = action_angular
         self.cmd_vel_pub.publish(twist)
-
+        self.v_linear_x = action_linear_x
+        self.v_linear_y = action_linear_y
         # Prepare repsonse
         previous_action = request.previous_action
         previous_action_X = previous_action[LINEAR_X]
@@ -330,7 +337,8 @@ class DRLEnvironment(Node):
         response.state = self.get_state([previous_action_X,previous_action_Y], previous_action[ANGULAR])
         # response.reward = rw.get_reward(self.succeed, action_linear, action_angular, self.goal_distance,
         #                                     self.goal_angle, self.obstacle_distance)
-        print("min obstacle_distance: , obstacle_index: ", self.obstacle_distance, self.obstacle_index)
+        # print("min_obstacle_distance: , obstacle_index: ", self.obstacle_distance, self.obstacle_index)
+        print(f"min_obstacle_distance: {self.obstacle_distance :<3.1f}, obstacle_index: {self.obstacle_index :d}")
         response.reward = rw.get_reward(self.succeed, self.state_tmp_list, self.goal_distance,
                                             self.goal_angle, self.obstacle_distance, self.obstacle_index)
         response.done = self.done

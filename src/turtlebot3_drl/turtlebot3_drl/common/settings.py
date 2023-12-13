@@ -28,11 +28,11 @@ EPISODE_TIMEOUT_SECONDS     = 50    # Number of seconds after which episode time
 ARENA_LENGTH                = 16   # meters 地图大小/希望设置的目标范围大小
 ARENA_WIDTH                 = 16   # meters 地图大小
 SPEED_LINEAR_MAX            = 1.5  # m/s 线速度最大值
-SPEED_ANGULAR_MAX           = 0.5   # rad/s 角速度最大值
+SPEED_ANGULAR_MAX           = 0.8   # rad/s 角速度最大值
 
 LIDAR_DISTANCE_CAP          = 3.5   # meters 雷达探测范围
 THRESHOLD_COLLISION         = 0.30  # meters 障碍物碰撞判定距离
-THREHSOLD_GOAL              = 0.70  # meters 目标抵达判定距离
+THREHSOLD_GOAL              = 0.50  # meters 目标抵达判定距离
 
 OBSTACLE_RADIUS             = 0.3  # meters 障碍物半径（圆柱体）
 MAX_NUMBER_OBSTACLES        = 6     # 最多障碍物数量

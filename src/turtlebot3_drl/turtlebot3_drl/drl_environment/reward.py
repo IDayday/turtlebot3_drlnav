@@ -227,13 +227,17 @@ def get_reward_E(succeed, state_tmp_list, goal_dist, goal_angle, min_obstacle_di
             r_obstacle = -20 * min_obstacle_dist**2 + 50*min_obstacle_dist - 31.25
         else:
             r_obstacle = 0
+
+        r_obstale_index = 0
         if min_obstacle_dist < 1.25:
+            # if obstacle_index < 180 and obstacle_index >= 90:
+            #     r_obstale_index = -10 * obstacle_index / 180
+            # elif obstacle_index < 270 and obstacle_index >= 180:
+            #     r_obstale_index = -10 * (360 - obstacle_index) / 180
             if obstacle_index < 180:
-                r_obstale_index = -20 * obstacle_index / 180
+                r_obstale_index = -10 * obstacle_index / 180
             else:
-                r_obstale_index = -20 * (360 - obstacle_index) / 180
-        else:
-            r_obstale_index = 0
+                r_obstale_index = -10 * (360 - obstacle_index) / 180
         
         if vx < 0:
              r_vlinear_x = -2 * abs(vx)
@@ -243,7 +247,7 @@ def get_reward_E(succeed, state_tmp_list, goal_dist, goal_angle, min_obstacle_di
         r_vlinear = r_vlinear_x + r_vlinear_y
 
         # reward = 0.2*r_yaw + 0.5*r_distance + 0.2*r_obstacle + 0.2*r_obstale_index + 0.01*r_vlinear + 0.05*r_vangular + 0.2*r_acc + 0.05*r_scan - 0.1
-        reward = 0.2*r_yaw + 0.5*r_distance + 0.2*r_obstacle + 0.2*r_obstale_index + 0.01*r_vlinear + 0.05*r_vangular - 0.1
+        reward = 0.2*r_yaw + 0.5*r_distance + 0.2*r_obstacle + 0.1*r_obstale_index + 0.01*r_vlinear + 0.05*r_vangular - 0.1
 
         if succeed == SUCCESS:
             reward += 500

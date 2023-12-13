@@ -105,7 +105,7 @@ class DrlAgent(Node):
             self.gazebo_pause = self.create_client(Empty, '/pause_physics')
             self.gazebo_unpause = self.create_client(Empty, '/unpause_physics')
         if self.training:
-            episode_num = 2000
+            episode_num = 10000
         else:
             episode_num = 100
         self.process(episode_num)
@@ -156,7 +156,7 @@ class DrlAgent(Node):
                         next_state += frame_buffer[start : start + self.model.state_size]
 
                 # Train
-                if self.training == True and self.total_steps > self.observe_steps:
+                if self.training == True:
                     self.replay_buffer.add_sample(state, action, [reward], next_state, [episode_done])
                     if self.replay_buffer.get_length() >= self.model.batch_size:
                         loss_c, loss_a, = self.model._train(self.replay_buffer)
