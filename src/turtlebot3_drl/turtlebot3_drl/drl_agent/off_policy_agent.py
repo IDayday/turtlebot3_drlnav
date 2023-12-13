@@ -20,7 +20,9 @@ import torch.nn.functional as torchf
 
 from turtlebot3_drl.drl_environment.reward import REWARD_FUNCTION
 from ..common.settings import ENABLE_BACKWARD, ENABLE_STACKING, ACTION_SIZE, HIDDEN_SIZE, BATCH_SIZE, BUFFER_SIZE, DISCOUNT_FACTOR, \
-                                 LEARNING_RATE, TAU, STEP_TIME, EPSILON_DECAY, EPSILON_MINIMUM, STACK_DEPTH, FRAME_SKIP, STATE_SIZE
+                                 LEARNING_RATE, TAU, STEP_TIME, EPSILON_DECAY, EPSILON_MINIMUM, STACK_DEPTH, FRAME_SKIP, STATE_SIZE, \
+                                 ARENA_LENGTH, ARENA_WIDTH, SPEED_LINEAR_MAX, SPEED_ANGULAR_MAX, LIDAR_DISTANCE_CAP, THRESHOLD_COLLISION, \
+                                 THREHSOLD_GOAL, OBSTACLE_RADIUS
 from ..drl_environment.drl_environment import NUM_SCAN_SAMPLES
 
 
@@ -53,6 +55,15 @@ class OffPolicyAgent(ABC):
         self.stacking_enabled   = ENABLE_STACKING
         self.stack_depth        = STACK_DEPTH
         self.frame_skip         = FRAME_SKIP
+        # Env parameters
+        self.area_length        = ARENA_LENGTH
+        self.area_width         = ARENA_WIDTH
+        self.max_linear_speed   = SPEED_LINEAR_MAX
+        self.max_angular_speed  = SPEED_ANGULAR_MAX
+        self.lidar_distance_cap = LIDAR_DISTANCE_CAP
+        self.threshold_collision = THRESHOLD_COLLISION
+        self.threshold          = THREHSOLD_GOAL
+        self.obastacle_radius   = OBSTACLE_RADIUS
         if ENABLE_STACKING:
             self.input_size *= self.stack_depth
 

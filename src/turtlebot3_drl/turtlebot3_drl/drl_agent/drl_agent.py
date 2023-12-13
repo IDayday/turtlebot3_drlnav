@@ -138,17 +138,18 @@ class DrlAgent(Node):
                 else:
                     action = self.model.get_action(state, self.training, step, ENABLE_VISUAL, play_in_rule)  # x[-1,1]
                 
+                action_env = [0.0, 0.0, 0.0]
                 if play_in_rule and self.total_steps >= self.warm_steps:
-                    action_current = action
+                    action_env[0] = action[0]
+                    action_env[2] = action[1]
                 else:
-                    action_env = [0.0, 0.0, 0.0]
                     action_env[0] = action[0]*(1.6/2) + (-0.1 + 1.5)/2                         # x[-0.1,1.5]
                     action_env[2] = action[1]*(1.6/2)                                          # yaw[-0.8,0.8]
-                    action_current = action_env
+                action_current = action_env
 
                 if self.algorithm == 'dqn':
                     action_current = self.model.possible_actions[action]
-
+                # print("action", action_current)
                 # Take a step
                 next_state, reward, episode_done, outcome, distance_traveled = util.step(self, action_current, action_past)
                 action_past = copy.deepcopy(action_current)
@@ -163,6 +164,8 @@ class DrlAgent(Node):
 
                 if ENABLE_VISUAL:
                     self.visual.update_reward(reward_sum)
+                if self.training == True:
+                    self.replay_buffer.add_sample(state, action, [reward], next_state, [episode_done])
                 state = copy.deepcopy(next_state)
                 step += 1
                 time.sleep(self.model.step_time)
@@ -172,9 +175,8 @@ class DrlAgent(Node):
 
             # DelayTrain
             if self.training == True:
-                for i in range(step):
-                    self.replay_buffer.add_sample(state, action, [reward], next_state, [episode_done])
-                    if self.replay_buffer.get_length() >= self.model.batch_size and self.total_steps > self.warm_steps+self.pretrain_steps:
+                if self.replay_buffer.get_length() >= self.model.batch_size and self.total_steps > self.warm_steps+self.pretrain_steps:
+                    for i in range(step):
                         loss_c, loss_a, = self.model._train(self.replay_buffer)
                         loss_critic += loss_c
                         loss_actor += loss_a

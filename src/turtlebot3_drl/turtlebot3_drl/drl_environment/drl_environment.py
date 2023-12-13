@@ -36,7 +36,7 @@ from . import reward as rw
 from ..common import utilities as util
 from ..common.settings import ENABLE_BACKWARD, EPISODE_TIMEOUT_SECONDS, ENABLE_MOTOR_NOISE, UNKNOWN, SUCCESS, COLLISION_WALL, COLLISION_OBSTACLE, TIMEOUT, TUMBLE, \
                                 TOPIC_SCAN, TOPIC_VELO, TOPIC_ODOM, ARENA_LENGTH, ARENA_WIDTH, MAX_NUMBER_OBSTACLES, OBSTACLE_RADIUS, LIDAR_DISTANCE_CAP, \
-                                    SPEED_LINEAR_MAX, SPEED_ANGULAR_MAX, THRESHOLD_COLLISION, THREHSOLD_GOAL, ENABLE_DYNAMIC_GOALS
+                                    SPEED_LINEAR_MAX, SPEED_ANGULAR_MAX, THRESHOLD_COLLISION, THRESHOLD_GOAL, ENABLE_DYNAMIC_GOALS
 
 NUM_SCAN_SAMPLES = util.get_scan_count()
 LINEAR_X = 0
@@ -241,7 +241,7 @@ class DRLEnvironment(Node):
         if self.local_step <= 30: # Grace period to wait for simulation reset
             return state
         # Success
-        if self.goal_distance < THREHSOLD_GOAL:
+        if self.goal_distance < THRESHOLD_GOAL:
             self.succeed = SUCCESS
         # Collision
         elif self.obstacle_distance < THRESHOLD_COLLISION:

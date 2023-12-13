@@ -92,13 +92,13 @@ class DDPG(OffPolicyAgent):
             robot_safe = self.cal_safe(state[0:-5], 0.1)
             if abs(state[-4]) > math.pi/20:
                 if state[-4] > 0:
-                    vel = [0.0, 0.0, 0.3]
+                    vel = [0.0, 0.3]
                 else:
-                    vel = [0.0, 0.0, -0.3]
+                    vel = [0.0, -0.3]
             elif not robot_safe:
-                vel = [-0.1, 0.0, 0.0]
+                vel = [-0.1, 0.0]
             else:
-                vel = [1.0, 0.0, 0.0]
+                vel = [1.0, 0.0]
             action = vel
         else:
             state = torch.from_numpy(np.asarray(state, np.float32)).to(self.device)
