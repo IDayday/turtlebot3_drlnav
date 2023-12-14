@@ -58,7 +58,7 @@ class DRLGazebo(Node):
         print(f"running on stage: {self.stage}, dynamic goals enabled: {ENABLE_DYNAMIC_GOALS}")
 
         self.prev_x, self.prev_y = -1, -1
-        self.goal_x, self.goal_y = 0.5, 0.0
+        self.goal_x, self.goal_y = 2.0, 0.0
         self.reset_env_times = 0
         self.warm_times = 300
         self.learning_times = 200
