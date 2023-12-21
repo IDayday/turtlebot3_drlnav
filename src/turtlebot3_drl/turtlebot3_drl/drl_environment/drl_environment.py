@@ -17,7 +17,9 @@
 # Authors: Ryan Shim, Gilbert, Tomas
 import os
 import math
-import numpy
+import numpy as np
+import random
+import torch
 import sys
 import copy
 from numpy.core.numeric import Infinity
@@ -36,7 +38,7 @@ from . import reward as rw
 from ..common import utilities as util
 from ..common.settings import ENABLE_BACKWARD, EPISODE_TIMEOUT_SECONDS, ENABLE_MOTOR_NOISE, UNKNOWN, SUCCESS, COLLISION_WALL, COLLISION_OBSTACLE, TIMEOUT, TUMBLE, \
                                 TOPIC_SCAN, TOPIC_VELO, TOPIC_ODOM, ARENA_LENGTH, ARENA_WIDTH, MAX_NUMBER_OBSTACLES, OBSTACLE_RADIUS, LIDAR_DISTANCE_CAP, \
-                                    SPEED_LINEAR_MAX, SPEED_ANGULAR_MAX, THRESHOLD_COLLISION, THREHSOLD_GOAL, ENABLE_DYNAMIC_GOALS
+                                    SPEED_LINEAR_MAX, SPEED_ANGULAR_MAX, THRESHOLD_COLLISION, THREHSOLD_GOAL, ENABLE_DYNAMIC_GOALS, SEED
 
 NUM_SCAN_SAMPLES = util.get_scan_count()
 LINEAR_X = 0
@@ -166,9 +168,9 @@ class DRLEnvironment(Node):
             goal_angle += 2 * math.pi
 
         self.goal_distance = distance_to_goal
-        print("goal_x, goal_y", [self.goal_x, self.goal_y])
-        print("robot_x, robot_y", [self.robot_x, self.robot_y])
-        print("distance_to_goal", distance_to_goal)
+        # print("goal_x, goal_y", [self.goal_x, self.goal_y])
+        # print("robot_x, robot_y", [self.robot_x, self.robot_y])
+        # print("distance_to_goal", distance_to_goal)
         self.goal_angle = goal_angle
 
     # TODO: 传感器数据处理
@@ -180,7 +182,7 @@ class DRLEnvironment(Node):
         # normalize laser values
         self.obstacle_distance = 1
         for i in range(NUM_SCAN_SAMPLES):
-                self.scan_ranges[i] = numpy.clip(float(msg.ranges[i]) / LIDAR_DISTANCE_CAP, 0, 1)
+                self.scan_ranges[i] = np.clip(float(msg.ranges[i]) / LIDAR_DISTANCE_CAP, 0, 1)
                 if self.scan_ranges[i] < self.obstacle_distance:
                     self.obstacle_distance = self.scan_ranges[i]
         # print("min obstacle_distance", self.obstacle_distance)
@@ -196,7 +198,7 @@ class DRLEnvironment(Node):
             return
         episode_time = self.episode_timeout
         if ENABLE_DYNAMIC_GOALS:
-            episode_time = numpy.clip(episode_time * self.difficulty_radius, 10, 50)
+            episode_time = np.clip(episode_time * self.difficulty_radius, 10, 50)
         self.episode_deadline = self.time_sec + episode_time
         self.reset_deadline = False
         self.clock_msgs_skipped = 0
@@ -213,7 +215,7 @@ class DRLEnvironment(Node):
         if success != 1:
             self.robot_x_tmp += self.robot_x
             self.robot_y_tmp += self.robot_y
-        req.radius = numpy.clip(self.difficulty_radius, 0.5, 4)
+        req.radius = np.clip(self.difficulty_radius, 0.5, 4)
         if success:
             self.difficulty_radius *= 1.01
             while not self.task_succeed_client.wait_for_service(timeout_sec=1.0):
@@ -228,7 +230,7 @@ class DRLEnvironment(Node):
     # TODO: state
     def get_state(self, action_linear_previous, action_angular_previous):
         state = copy.deepcopy(self.scan_ranges)                                             # range: [ 0, 1]
-        state.append(float(numpy.clip((self.goal_distance / MAX_GOAL_DISTANCE), 0, 1)))     # range: [ 0, 1]
+        state.append(float(np.clip((self.goal_distance / MAX_GOAL_DISTANCE), 0, 1)))     # range: [ 0, 1]
         state.append(float(self.goal_angle) / math.pi)                                      # range: [-1, 1]
         # state.append(float(self.goal_x - self.robot_x))
         # state.append(float(self.goal_y - self.robot_y))
@@ -283,9 +285,9 @@ class DRLEnvironment(Node):
             return self.initalize_episode(response)
 
         if ENABLE_MOTOR_NOISE:
-            request.action[LINEAR_X] += numpy.clip(numpy.random.normal(0, 0.05), -0.1, 0.1)
-            request.action[LINEAR_Y] += numpy.clip(numpy.random.normal(0, 0.05), -0.1, 0.1)
-            # request.action[ANGULAR] += numpy.clip(numpy.random.normal(0, 0.05), -0.1, 0.1)
+            request.action[LINEAR_X] += np.clip(np.random.normal(0, 0.05), -0.1, 0.1)
+            request.action[LINEAR_Y] += np.clip(np.random.normal(0, 0.05), -0.1, 0.1)
+            # request.action[ANGULAR] += np.clip(np.random.normal(0, 0.05), -0.1, 0.1)
 
         # Un-normalize actions
         if ENABLE_BACKWARD:
@@ -331,6 +333,9 @@ class DRLEnvironment(Node):
         return response
 
 def main(args=sys.argv[1:]):
+    np.random.seed(SEED)
+    random.seed(SEED)
+    torch.manual_seed(SEED)
     rclpy.init(args=args)
     if len(args) == 0:
         drl_environment = DRLEnvironment()
