@@ -24,7 +24,8 @@ import numpy as np
 import random
 import torch
 
-from ..common.settings import ENABLE_VISUAL, ENABLE_STACKING, OBSERVE_STEPS, MODEL_STORE_INTERVAL, GRAPH_DRAW_INTERVAL, SEED
+from ..common.settings import ENABLE_VISUAL, ENABLE_STACKING, OBSERVE_STEPS, MODEL_STORE_INTERVAL, GRAPH_DRAW_INTERVAL, SEED,\
+                                SPEED_LINEAR_MAX, SPEED_ANGULAR_MAX
 
 from ..common.storagemanager import StorageManager
 from ..common.graph import Graph
@@ -38,10 +39,12 @@ from .ddpg import DDPG
 from .td3 import TD3
 
 from turtlebot3_msgs.srv import DrlStep, Goal
+from geometry_msgs.msg import Twist
 from std_srvs.srv import Empty
 
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import QoSProfile
 from ..common.replaybuffer import ReplayBuffer
 
 class DrlAgent(Node):
@@ -60,7 +63,7 @@ class DrlAgent(Node):
         print(f"{'training' if (self.training) else 'testing' } on stage: {util.stage}")
         self.total_steps = 0
         self.observe_steps = OBSERVE_STEPS
-
+        self.joy_action = Twist()
         if self.algorithm == 'dqn':
             self.model = DQN(self.device, self.sim_speed)
         elif self.algorithm == 'ddpg':
@@ -104,6 +107,8 @@ class DrlAgent(Node):
 
         self.step_comm_client = self.create_client(DrlStep, 'step_comm')
         self.goal_comm_client = self.create_client(Goal, 'goal_comm')
+        qos = QoSProfile(depth=10)
+        self.joyaction_sub = self.create_subscription(Twist, 'cmd_vel_joy', self.joyaction_callback, qos)
         if not self.real_robot:
             self.gazebo_pause = self.create_client(Empty, '/pause_physics')
             self.gazebo_unpause = self.create_client(Empty, '/unpause_physics')
@@ -113,6 +118,8 @@ class DrlAgent(Node):
             episode_num = 200
         self.process(episode_num)
 
+    def joyaction_callback(self, msg):
+        self.joy_action = msg
 
     def process(self, episode_num):
         util.pause_simulation(self, self.real_robot)
@@ -135,17 +142,26 @@ class DrlAgent(Node):
             episode_start = time.perf_counter()
 
             while not episode_done:
-                if self.training and self.total_steps < self.observe_steps:
-                    action = self.model.get_action_random()                                    # x[-1.0,1.0]
-                else:
-                    action = self.model.get_action(state, self.training, step, ENABLE_VISUAL)  # x[-1,1]
-                action_env = copy.deepcopy(action)
-                action_env[0] = action_env[0]*(1.1/2) + (-0.1 + 1.0)/2                         # x[-0.1,1.0]
-                action_env[1] = action_env[1]*(0.2/2)                                          # y[-0.1,0.1]
-                action_current = action_env
-                print("action:", action_current)
-                if self.algorithm == 'dqn':
-                    action_current = self.model.possible_actions[action]
+                # if self.training and self.total_steps < self.observe_steps:
+                #     action = self.model.get_action_random()                                    # x[-1.0,1.0]
+                # else:
+                #     action = self.model.get_action(state, self.training, step, ENABLE_VISUAL)  # x[-1,1]
+                # action_env = copy.deepcopy(action)
+                # action_env[0] = action_env[0]*(1.1/2) + (-0.1 + 1.0)/2                         # x[-0.1,1.0]
+                # action_env[1] = action_env[1]*(0.2/2)                                          # y[-0.1,0.1]
+                # action_current = action_env
+                # print("action:", action_current)
+                # if self.algorithm == 'dqn':
+                #     action_current = self.model.possible_actions[action]
+
+                joy_action = self.joy_action
+                action_current = [joy_action.linear.x, joy_action.linear.y,  joy_action.angular.z]
+                print("real_action: ", action_current)
+                linear_x = action_current[0]/SPEED_LINEAR_MAX
+                linear_y = action_current[1]/SPEED_LINEAR_MAX
+                angular  = action_current[2]/SPEED_ANGULAR_MAX
+                action   = [linear_x, linear_y, angular]
+                print("buffer_action: ", action)
 
                 # Take a step
                 next_state, reward, episode_done, outcome, distance_traveled = util.step(self, action_current, action_past)
