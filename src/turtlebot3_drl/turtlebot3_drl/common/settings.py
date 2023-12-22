@@ -10,7 +10,8 @@ ENABLE_DYNAMIC_GOALS     = False    # If true, goal difficulty (distance) is ada
 MODEL_STORE_INTERVAL     = 100      # Store the model weights every N episodes
 GRAPH_DRAW_INTERVAL      = 10       # Draw the graph every N episodes (drawing too often will slow down training)
 GRAPH_AVERAGE_REWARD     = 10       # Average the reward graph over every N episodes
-PROJECT_PATH             = "/home/pdf/workspace/RL/turtlebot3_drlnav/src/turtlebot3_drl/turtlebot3_drl"
+# PROJECT_PATH             = "/home/pdf/workspace/RL/turtlebot3_drlnav/src/turtlebot3_drl/turtlebot3_drl"
+PROJECT_PATH             = "/root/project/turtlebot3_drlnav/src/turtlebot3_drl/turtlebot3_drl"
 
 # ===================================================================== #
 #                         ENVIRONMENT SETTINGS                          #
@@ -30,7 +31,7 @@ SPEED_LINEAR_MAX            = 1.5  # m/s 线速度最大值
 SPEED_ANGULAR_MAX           = 1.0   # rad/s 角速度最大值
 
 LIDAR_DISTANCE_CAP          = 3.5   # meters 雷达探测范围
-THRESHOLD_COLLISION         = 0.20  # meters 障碍物碰撞判定距离
+THRESHOLD_COLLISION         = 0.30  # meters 障碍物碰撞判定距离
 THREHSOLD_GOAL              = 0.90  # meters 目标抵达判定距离
 
 OBSTACLE_RADIUS             = 0.3  # meters 障碍物半径（圆柱体）
@@ -62,11 +63,12 @@ REAL_THRESHOLD_GOAL         = 0.20  # meters, minimum distance to goal that coun
 STATE_SIZE      = 360
 ACTION_SIZE     = 3         # Not used for DQN, see DQN_ACTION_SIZE 三个动作 x方向线速度，y方向线速度,z轴旋转角速度
 HIDDEN_SIZE     = 512       # Number of neurons in hidden layers
+SEED            = 42
 
-BATCH_SIZE      = 512      # Number of samples per training batch
+BATCH_SIZE      = 1024      # Number of samples per training batch
 BUFFER_SIZE     = 1000000   # Number of samples stored in replay buffer before FIFO
 DISCOUNT_FACTOR = 0.99
-LEARNING_RATE   = 0.003
+LEARNING_RATE   = 0.005
 TAU             = 0.003
 
 OBSERVE_STEPS   = 5000     # At training start random actions are taken for N steps for better exploration
@@ -81,8 +83,8 @@ TARGET_UPDATE_FREQUENCY = 1000
 # DDPG parameters
 
 # TD3 parameters
-POLICY_NOISE            = 0.2
-POLICY_NOISE_CLIP       = 0.5
+POLICY_NOISE            = 0.3
+POLICY_NOISE_CLIP       = 0.1
 POLICY_UPDATE_FREQUENCY = 2
 
 # Stacking

@@ -145,7 +145,7 @@ def get_scan_count():
 
     # export DOG_BASE_PATH=/home/dayday/project/cyberdog_sim
     # tree = ET.parse(os.getenv('DOG_BASE_PATH')+'/src/cyberdog_ros2/cyberdog_robot/cyberdog_description/xacro/gazebo.xacro')
-    tree = ET.parse('src/turtlebot3_simulations/turtlebot3_gazebo/xacro/gazebo.xacro')
+    tree = ET.parse(os.getenv('DRLNAV_BASE_PATH') + '/src/turtlebot3_simulations/turtlebot3_gazebo/xacro/gazebo.xacro')
     root = tree.getroot()
     for link in root.findall('gazebo'):
         if link.get('reference') == 'lidar_link':

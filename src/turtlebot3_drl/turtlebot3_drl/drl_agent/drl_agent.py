@@ -21,8 +21,10 @@ import os
 import sys
 import time
 import numpy as np
+import random
+import torch
 
-from ..common.settings import ENABLE_VISUAL, ENABLE_STACKING, OBSERVE_STEPS, MODEL_STORE_INTERVAL, GRAPH_DRAW_INTERVAL
+from ..common.settings import ENABLE_VISUAL, ENABLE_STACKING, OBSERVE_STEPS, MODEL_STORE_INTERVAL, GRAPH_DRAW_INTERVAL, SEED
 
 from ..common.storagemanager import StorageManager
 from ..common.graph import Graph
@@ -141,6 +143,7 @@ class DrlAgent(Node):
                 action_env[0] = action_env[0]*(1.1/2) + (-0.1 + 1.0)/2                         # x[-0.1,1.0]
                 action_env[1] = action_env[1]*(0.2/2)                                          # y[-0.1,0.1]
                 action_current = action_env
+                print("action:", action_current)
                 if self.algorithm == 'dqn':
                     action_current = self.model.possible_actions[action]
 
@@ -157,9 +160,9 @@ class DrlAgent(Node):
                         next_state += frame_buffer[start : start + self.model.state_size]
 
                 # Train
-                if self.training == True and self.total_steps > self.observe_steps:
+                if self.training == True:
                     self.replay_buffer.add_sample(state, action, [reward], next_state, [episode_done])
-                    if self.replay_buffer.get_length() >= self.model.batch_size:
+                    if self.replay_buffer.get_length() >= self.model.batch_size and self.total_steps > self.observe_steps:
                         loss_c, loss_a, = self.model._train(self.replay_buffer)
                         loss_critic += loss_c
                         loss_actor += loss_a
@@ -205,6 +208,9 @@ class DrlAgent(Node):
 
 
 def main(args=sys.argv[1:]):
+    np.random.seed(SEED)
+    random.seed(SEED)
+    torch.manual_seed(SEED)
     rclpy.init(args=args)
     drl_agent = DrlAgent(*args)
     rclpy.spin(drl_agent)
