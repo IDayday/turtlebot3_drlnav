@@ -8,13 +8,13 @@
         <geometry>
           <cylinder>
             <radius>0.3</radius>
-            <length>0.001</length>
+            <length>0.01</length>
           </cylinder>
         </geometry>
         <material>
           <script>
             <uri>file://media/materials/scripts/gazebo.material</uri>
-            <name>Gazebo/Grey</name>
+            <name>Gazebo/Yellow</name>
           </script>
           <ambient>1 0 0 1</ambient>
         </material>

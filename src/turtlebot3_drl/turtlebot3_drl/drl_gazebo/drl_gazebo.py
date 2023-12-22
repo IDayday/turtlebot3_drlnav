@@ -79,12 +79,16 @@ class DRLGazebo(Node):
         self.task_succeed_server    = self.create_service(RingGoal, 'task_succeed', self.task_succeed_callback)
         self.task_fail_server       = self.create_service(RingGoal, 'task_fail', self.task_fail_callback)
 
+        self.timer = self.create_timer(0.5, self.timer_callback)
+
         self.obstacle_coordinates   = self.get_obstacle_coordinates()
         self.init_callback()
 
     """*******************************************************************************
     ** Callback functions and relevant functions
     *******************************************************************************"""
+    def timer_callback(self):
+        self.spawn_entity()
 
     def init_callback(self):
         self.delete_entity()
