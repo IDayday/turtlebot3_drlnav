@@ -23,8 +23,9 @@ class Actor(Network):
         super(Actor, self).__init__(name)
         # --- define layers here ---
         self.fa1 = nn.Linear(state_size-5, hidden_size)
-        self.fa2 = nn.Linear(hidden_size+5, hidden_size)
-        self.fa3 = nn.Linear(hidden_size, action_size)
+        self.fa2 = nn.Linear(hidden_size, 32)
+        self.fa3 = nn.Linear(32+5, int(hidden_size/2))
+        self.fa4 = nn.Linear(int(hidden_size/2), action_size)
 
         self.apply(super().init_weights)
 
@@ -33,9 +34,10 @@ class Actor(Network):
         scan = states[:,:-5]
         other = states[:,-5:]
         x1 = torch.relu(self.fa1(scan))
-        concat = torch.cat([x1, other], dim=-1)
-        x2 = torch.relu(self.fa2(concat))
-        action = torch.tanh(self.fa3(x2))
+        x2 = torch.relu(self.fa2(x1))
+        concat = torch.cat([x2, other], dim=-1)
+        x3 = torch.relu(self.fa3(concat))
+        action = torch.tanh(self.fa4(x3))
 
         # -- define layers to visualize here (optional) ---
         if visualize and self.visual:

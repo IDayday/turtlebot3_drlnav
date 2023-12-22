@@ -64,10 +64,10 @@ ACTION_SIZE     = 3         # Not used for DQN, see DQN_ACTION_SIZE 三个动作
 HIDDEN_SIZE     = 512       # Number of neurons in hidden layers
 SEED            = 42
 
-BATCH_SIZE      = 512      # Number of samples per training batch
+BATCH_SIZE      = 1024      # Number of samples per training batch
 BUFFER_SIZE     = 1000000   # Number of samples stored in replay buffer before FIFO
 DISCOUNT_FACTOR = 0.99
-LEARNING_RATE   = 0.003
+LEARNING_RATE   = 0.005
 TAU             = 0.003
 
 OBSERVE_STEPS   = 5000     # At training start random actions are taken for N steps for better exploration
@@ -82,7 +82,7 @@ TARGET_UPDATE_FREQUENCY = 1000
 # DDPG parameters
 
 # TD3 parameters
-POLICY_NOISE            = 0.1
+POLICY_NOISE            = 0.3
 POLICY_NOISE_CLIP       = 0.1
 POLICY_UPDATE_FREQUENCY = 2
 
