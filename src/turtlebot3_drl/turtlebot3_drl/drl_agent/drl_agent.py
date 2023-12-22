@@ -176,9 +176,9 @@ class DrlAgent(Node):
                         next_state += frame_buffer[start : start + self.model.state_size]
 
                 # Train
-                if self.training == True and self.total_steps > self.observe_steps:
+                if self.training == True:
                     self.replay_buffer.add_sample(state, action, [reward], next_state, [episode_done])
-                    if self.replay_buffer.get_length() >= self.model.batch_size:
+                    if self.replay_buffer.get_length() >= self.model.batch_size and self.total_steps > self.observe_steps:
                         loss_c, loss_a, = self.model._train(self.replay_buffer)
                         loss_critic += loss_c
                         loss_actor += loss_a
