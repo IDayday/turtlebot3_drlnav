@@ -25,7 +25,7 @@ import random
 import torch
 
 from ..common.settings import ENABLE_VISUAL, ENABLE_STACKING, OBSERVE_STEPS, MODEL_STORE_INTERVAL, GRAPH_DRAW_INTERVAL, SEED,\
-                                SPEED_LINEAR_MAX, SPEED_ANGULAR_MAX
+                                SPEED_LINEAR_MAX, SPEED_ANGULAR_MAX, HUMAN_PLAY
 
 from ..common.storagemanager import StorageManager
 from ..common.graph import Graph
@@ -142,26 +142,34 @@ class DrlAgent(Node):
             episode_start = time.perf_counter()
 
             while not episode_done:
-                # if self.training and self.total_steps < self.observe_steps:
-                #     action = self.model.get_action_random()                                    # x[-1.0,1.0]
-                # else:
-                #     action = self.model.get_action(state, self.training, step, ENABLE_VISUAL)  # x[-1,1]
-                # action_env = copy.deepcopy(action)
-                # action_env[0] = action_env[0]*(1.1/2) + (-0.1 + 1.0)/2                         # x[-0.1,1.0]
-                # action_env[1] = action_env[1]*(0.2/2)                                          # y[-0.1,0.1]
-                # action_current = action_env
-                # print("action:", action_current)
-                # if self.algorithm == 'dqn':
-                #     action_current = self.model.possible_actions[action]
 
-                joy_action = self.joy_action
-                action_current = [joy_action.linear.x, joy_action.linear.y,  joy_action.angular.z]
-                print("real_action: ", action_current)
-                linear_x = action_current[0]/SPEED_LINEAR_MAX
-                linear_y = action_current[1]/SPEED_LINEAR_MAX
-                angular  = action_current[2]/SPEED_ANGULAR_MAX
-                action   = [linear_x, linear_y, angular]
-                print("buffer_action: ", action)
+                if HUMAN_PLAY:
+                    joy_action = copy.deepcopy(self.joy_action)
+                    action = [joy_action.linear.x, joy_action.linear.y,  joy_action.angular.z]
+                    # if all(abs(element) < 0.001 for element in action):
+                    #     continue
+                    # print("real_action: ", action_current)
+                    # linear_x = action_current[0]/SPEED_LINEAR_MAX
+                    # linear_y = action_current[1]/SPEED_LINEAR_MAX
+                    # angular  = action_current[2]/SPEED_ANGULAR_MAX
+                    # linear_x = action[0]*(1.1/2) + (-0.1 + 1.0)/2
+                    # linear_y = action[1]*(0.2/2)
+                    angular  = action[2]
+                    # action_current = [linear_x, linear_y, angular]
+                    action_current = action
+                    # print("buffer_action: ", action)
+                else:
+                    if self.training and self.total_steps < self.observe_steps:
+                        action = self.model.get_action_random()                                    # x[-1.0,1.0]
+                    else:
+                        action = self.model.get_action(state, self.training, step, ENABLE_VISUAL)  # x[-1,1]
+                    action_env = copy.deepcopy(action)
+                    # action_env[0] = action_env[0]*(1.1/2) + (-0.1 + 1.0)/2                         # x[-0.1,1.0]
+                    # action_env[1] = action_env[1]*(0.2/2)                                          # y[-0.1,0.1]
+                    action_current = action_env
+                    # print("action:", action_current)
+                    if self.algorithm == 'dqn':
+                        action_current = self.model.possible_actions[action]
 
                 # Take a step
                 next_state, reward, episode_done, outcome, distance_traveled = util.step(self, action_current, action_past)
