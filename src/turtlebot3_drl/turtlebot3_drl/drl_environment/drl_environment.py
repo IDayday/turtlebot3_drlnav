@@ -85,6 +85,7 @@ class DRLEnvironment(Node):
         self.difficulty_radius = 1
         self.local_step = 0
         self.time_sec = 0
+        self.reset_time = 0
 
         self.state_tmp_list = [[], [], []]
 
@@ -209,6 +210,7 @@ class DRLEnvironment(Node):
         self.episode_deadline = Infinity
         self.done = True
         req = RingGoal.Request()
+        self.reset_time += 1
         # TODO: 修正里程计
         req.robot_pose_x = self.robot_x
         req.robot_pose_y = self.robot_y
@@ -216,7 +218,7 @@ class DRLEnvironment(Node):
             self.robot_x_tmp += self.robot_x
             self.robot_y_tmp += self.robot_y
         req.radius = np.clip(self.difficulty_radius, 0.5, 4)
-        if success:
+        if success and self.reset_time%10 != 0:
             self.difficulty_radius *= 1.01
             while not self.task_succeed_client.wait_for_service(timeout_sec=1.0):
                 self.get_logger().info('success service not available, waiting again...')

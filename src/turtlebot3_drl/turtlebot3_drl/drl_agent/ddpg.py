@@ -24,7 +24,10 @@ class Actor(Network):
         # --- define layers here ---
         self.fa1 = nn.Linear(state_size-5, hidden_size)
         self.fa2 = nn.Linear(hidden_size, 32)
-        self.fa3 = nn.Linear(32+5, action_size)
+        self.fa3 = nn.Linear(32+5, int(hidden_size/2))
+        self.fa4 = nn.Linear(int(hidden_size/2), action_size)
+
+        self.ln = nn.LayerNorm(32)
         # --- define layers until here ---
 
         self.apply(super().init_weights)
@@ -36,9 +39,10 @@ class Actor(Network):
         scan = states[:,:-5]
         other = states[:,-5:]
         x1 = torch.relu(self.fa1(scan))
-        x2 = torch.tanh(self.fa2(x1))
+        x2 = self.ln(self.fa2(x1))
         concat = torch.cat([x2, other],dim=-1)
-        action = torch.tanh(self.fa3(concat))
+        x3 = torch.relu(self.fa3(concat))
+        action = torch.tanh(self.fa4(x3))
 
         # -- define layers to visualize here (optional) ---
         if visualize and self.visual:
@@ -55,6 +59,8 @@ class Critic(Network):
         self.l2 = nn.Linear(int(hidden_size / 2), 32)
         self.l3 = nn.Linear(32+5+action_size, int(hidden_size / 2))
         self.l4 = nn.Linear(int(hidden_size / 2), 1)
+
+        self.ln = nn.LayerNorm(32)
         # --- define layers until here ---
 
         self.apply(super().init_weights)
@@ -63,12 +69,12 @@ class Critic(Network):
         # --- define forward pass here ---
         scan = states[:,:-5]
         other = states[:,-5:]
-        xs = torch.relu(self.l1(scan))
-        xss = torch.tanh(self.l2(xs))
-        concat = torch.cat([xss, other, actions], dim=-1)
-        x = torch.relu(self.l3(concat))
-        x = self.l4(x)
-        return x
+        x1 = torch.relu(self.l1(scan))
+        x2 = self.ln(self.l2(x1))
+        concat = torch.cat([x2, other, actions], dim=-1)
+        x3 = torch.relu(self.l3(concat))
+        value = self.l4(x3)
+        return value
 
 
 class DDPG(OffPolicyAgent):
@@ -102,7 +108,6 @@ class DDPG(OffPolicyAgent):
     def get_action_random(self):
         random_x = np.random.uniform(-1.0, 1.0)
         random_y = np.random.uniform(-1.0, 1.0)
-        
         random_yaw = np.random.uniform(-1.0, 1.0)
         random_action = [random_x, random_y, random_yaw]
 
@@ -139,7 +144,7 @@ class DDPG(OffPolicyAgent):
 
         pred_a_sample = self.actor(state)
         loss_actor = -1 * (self.critic(state, pred_a_sample)).mean()
-
+        
         self.actor_optimizer.zero_grad()
         loss_actor.backward()
         nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=2.0, norm_type=2)

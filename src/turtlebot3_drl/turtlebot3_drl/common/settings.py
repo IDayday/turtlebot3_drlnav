@@ -11,8 +11,8 @@ HUMAN_PLAY               = False    # If true, the agent is disabled and the rob
 MODEL_STORE_INTERVAL     = 100      # Store the model weights every N episodes
 GRAPH_DRAW_INTERVAL      = 10       # Draw the graph every N episodes (drawing too often will slow down training)
 GRAPH_AVERAGE_REWARD     = 10       # Average the reward graph over every N episodes
-PROJECT_PATH             = "/home/pdf/workspace/RL/turtlebot3_drlnav/src/turtlebot3_drl/turtlebot3_drl"
-# PROJECT_PATH             = "/root/project/turtlebot3_drlnav/src/turtlebot3_drl/turtlebot3_drl"
+# PROJECT_PATH             = "/home/pdf/workspace/RL/turtlebot3_drlnav/src/turtlebot3_drl/turtlebot3_drl"
+PROJECT_PATH             = "/home/dayday/project/turtlebot3_drlnav/src/turtlebot3_drl/turtlebot3_drl"
 
 # ===================================================================== #
 #                         ENVIRONMENT SETTINGS                          #
@@ -63,16 +63,17 @@ REAL_THRESHOLD_GOAL         = 0.20  # meters, minimum distance to goal that coun
 # DRL parameters
 STATE_SIZE      = 360
 ACTION_SIZE     = 3         # Not used for DQN, see DQN_ACTION_SIZE 三个动作 x方向线速度，y方向线速度,z轴旋转角速度
+DIRECTION_SIZE  = 5
 HIDDEN_SIZE     = 512       # Number of neurons in hidden layers
 SEED            = 42
 
-BATCH_SIZE      = 1024      # Number of samples per training batch
+BATCH_SIZE      = 256      # Number of samples per training batch
 BUFFER_SIZE     = 1000000   # Number of samples stored in replay buffer before FIFO
 DISCOUNT_FACTOR = 0.99
 LEARNING_RATE   = 0.005
 TAU             = 0.003
 
-OBSERVE_STEPS   = 5000     # At training start random actions are taken for N steps for better exploration
+OBSERVE_STEPS   = 400     # At training start random actions are taken for N steps for better exploration
 STEP_TIME       = 0.1      # Delay between steps, can be set to 0  控制交互频率 初始100hz
 EPSILON_DECAY   = 0.9995    # Epsilon decay per step
 EPSILON_MINIMUM = 0.05

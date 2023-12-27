@@ -16,13 +16,13 @@
 
 from abc import ABC, abstractmethod
 import torch
-import torch.nn.functional as torchf
+import torch.nn as nn
 
 from turtlebot3_drl.drl_environment.reward import REWARD_FUNCTION
 from ..common.settings import ENABLE_BACKWARD, ENABLE_STACKING, ACTION_SIZE, HIDDEN_SIZE, BATCH_SIZE, BUFFER_SIZE, DISCOUNT_FACTOR, \
                                  LEARNING_RATE, TAU, STEP_TIME, EPSILON_DECAY, EPSILON_MINIMUM, STACK_DEPTH, FRAME_SKIP, STATE_SIZE, \
                                  ARENA_LENGTH, ARENA_WIDTH, SPEED_LINEAR_MAX, SPEED_ANGULAR_MAX, LIDAR_DISTANCE_CAP, THRESHOLD_COLLISION, \
-                                 THREHSOLD_GOAL, OBSTACLE_RADIUS
+                                 THREHSOLD_GOAL, OBSTACLE_RADIUS, DIRECTION_SIZE
 from ..drl_environment.drl_environment import NUM_SCAN_SAMPLES
 
 
@@ -46,7 +46,7 @@ class OffPolicyAgent(ABC):
         self.tau                = TAU
         # Other parameters
         self.step_time          = STEP_TIME
-        self.loss_function      = torchf.smooth_l1_loss
+        self.loss_function      = nn.MSELoss()
         self.epsilon            = 1.0
         self.epsilon_decay      = EPSILON_DECAY
         self.epsilon_minimum    = EPSILON_MINIMUM
