@@ -163,7 +163,7 @@ def get_reward_D(succeed, state_tmp_list, goal_dist, goal_angle, min_obstacle_di
         r_vlinear_y = -2 * abs(vy)
         r_vlinear = r_vlinear_x + r_vlinear_y
 
-        reward = 0.1*r_yaw + 0.5*r_distance + 0.24*r_obstacle + 0.01*r_vlinear + 0.09*r_vangular + 0.05*r_acc + 0.01*r_scan
+        reward = 0.2*r_yaw + 0.4*r_distance + 0.24*r_obstacle + 0.01*r_vlinear + 0.09*r_vangular + 0.05*r_acc + 0.01*r_scan
 
         if succeed == SUCCESS:
             reward += 500

@@ -107,7 +107,7 @@ class DDPG(OffPolicyAgent):
     # TODO:随机动作
     def get_action_random(self):
         random_x = np.random.uniform(-1.0, 1.0)
-        random_y = np.random.uniform(-1.0, 1.0)
+        random_y = np.array([0.0])
         random_yaw = np.random.uniform(-1.0, 1.0)
         random_action = [random_x, random_y, random_yaw]
 

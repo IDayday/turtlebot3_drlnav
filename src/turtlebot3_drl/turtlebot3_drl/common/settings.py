@@ -3,7 +3,7 @@
 # ===================================================================== #
 
 ENABLE_BACKWARD          = True    # Enable backward movement of the robot
-ENABLE_STACKING          = False    # Enable processing multiple consecutive scan frames at every observation step
+ENABLE_STACKING          = True    # Enable processing multiple consecutive scan frames at every observation step
 ENABLE_VISUAL            = False    # Meant to be used only during evaluation/testing phase
 ENABLE_TRUE_RANDOM_GOALS = True    # If false, goals are selected semi-randomly from a list of known valid goal positions
 ENABLE_DYNAMIC_GOALS     = False    # If true, goal difficulty (distance) is adapted according to current success rate
@@ -33,7 +33,7 @@ SPEED_ANGULAR_MAX           = 1.0   # rad/s 角速度最大值
 
 LIDAR_DISTANCE_CAP          = 3.5   # meters 雷达探测范围
 THRESHOLD_COLLISION         = 0.30  # meters 障碍物碰撞判定距离
-THREHSOLD_GOAL              = 0.90  # meters 目标抵达判定距离
+THREHSOLD_GOAL              = 0.50  # meters 目标抵达判定距离
 
 OBSTACLE_RADIUS             = 0.3  # meters 障碍物半径（圆柱体）
 MAX_NUMBER_OBSTACLES        = 6     # 最多障碍物数量
@@ -67,13 +67,13 @@ DIRECTION_SIZE  = 5
 HIDDEN_SIZE     = 512       # Number of neurons in hidden layers
 SEED            = 42
 
-BATCH_SIZE      = 256      # Number of samples per training batch
+BATCH_SIZE      = 512      # Number of samples per training batch
 BUFFER_SIZE     = 1000000   # Number of samples stored in replay buffer before FIFO
 DISCOUNT_FACTOR = 0.99
 LEARNING_RATE   = 0.005
 TAU             = 0.003
 
-OBSERVE_STEPS   = 400     # At training start random actions are taken for N steps for better exploration
+OBSERVE_STEPS   = 2000     # At training start random actions are taken for N steps for better exploration
 STEP_TIME       = 0.1      # Delay between steps, can be set to 0  控制交互频率 初始100hz
 EPSILON_DECAY   = 0.9995    # Epsilon decay per step
 EPSILON_MINIMUM = 0.05

@@ -145,18 +145,16 @@ class DrlAgent(Node):
 
                 if HUMAN_PLAY:
                     joy_action = copy.deepcopy(self.joy_action)
-                    action = [joy_action.linear.x, joy_action.linear.y,  joy_action.angular.z]
-                    # if all(abs(element) < 0.001 for element in action):
-                    #     continue
-                    # print("real_action: ", action_current)
-                    # linear_x = action_current[0]/SPEED_LINEAR_MAX
-                    # linear_y = action_current[1]/SPEED_LINEAR_MAX
-                    # angular  = action_current[2]/SPEED_ANGULAR_MAX
-                    # linear_x = action[0]*(1.1/2) + (-0.1 + 1.0)/2
-                    # linear_y = action[1]*(0.2/2)
-                    angular  = action[2]
-                    # action_current = [linear_x, linear_y, angular]
-                    action_current = action
+                    x = joy_action.linear.x
+                    y = 0.0
+                    z = joy_action.angular.z
+                    action = [0.0, 0.0, 0.0]
+
+                    if x < 0:
+                        x = -0.1 if x <= -0.1 else x
+                    action_current = [x, y, z]
+                    action[0] = (action_current[0]-0.45)*(2/1.1)
+                    action[2] = z
                     # print("buffer_action: ", action)
                 else:
                     if self.training and self.total_steps < self.observe_steps:
@@ -185,7 +183,8 @@ class DrlAgent(Node):
 
                 # Train
                 if self.training == True:
-                    self.replay_buffer.add_sample(state, action, [reward], next_state, [episode_done])
+                    if action_current[0] != 0.0 and action_current[2] != 0.0:
+                        self.replay_buffer.add_sample(state, action, [reward], next_state, [episode_done])
                     if self.replay_buffer.get_length() >= self.model.batch_size and self.total_steps > self.observe_steps:
                         loss_c, loss_a, = self.model._train(self.replay_buffer)
                         loss_critic += loss_c

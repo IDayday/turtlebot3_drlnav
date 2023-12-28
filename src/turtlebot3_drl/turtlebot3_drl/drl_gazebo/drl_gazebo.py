@@ -192,11 +192,11 @@ class DRLGazebo(Node):
         self.prev_x = self.goal_x
         self.prev_y = self.goal_y
         tries = 0
-        if self.train:
-            self.goal_x , self.goal_y = self.random_goals()
-        else:
-            self.goal_x = random.randrange(-60, 60) / 10.0
-            self.goal_y = random.randrange(-60, 60) / 10.0
+        # if self.train:
+        #     self.goal_x , self.goal_y = self.random_goals()
+        # else:
+        self.goal_x = random.randrange(-60, 60) / 10.0
+        self.goal_y = random.randrange(-60, 60) / 10.0
         while not self.goal_is_valid(self.goal_x, self.goal_y):
             self.goal_x , self.goal_y = self.random_goals()
         tries += 1
