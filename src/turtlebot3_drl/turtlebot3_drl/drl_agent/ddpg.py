@@ -27,7 +27,9 @@ class Actor(Network):
         self.fa3 = nn.Linear(32+5, int(hidden_size/2))
         self.fa4 = nn.Linear(int(hidden_size/2), action_size)
 
-        self.ln = nn.LayerNorm(32)
+        self.ln1 = nn.LayerNorm(hidden_size)
+        self.ln2 = nn.LayerNorm(32)
+        self.ln3 = nn.LayerNorm(int(hidden_size/2))
         # --- define layers until here ---
 
         self.apply(super().init_weights)
@@ -38,10 +40,10 @@ class Actor(Network):
         # --- define forward pass here ---
         scan = states[:,:-5]
         other = states[:,-5:]
-        x1 = torch.relu(self.fa1(scan))
-        x2 = self.ln(self.fa2(x1))
+        x1 = torch.relu(self.ln1(self.fa1(scan)))
+        x2 = torch.relu(self.ln2(self.fa2(x1)))
         concat = torch.cat([x2, other],dim=-1)
-        x3 = torch.relu(self.fa3(concat))
+        x3 = torch.relu(self.ln3(self.fa3(concat)))
         action = torch.tanh(self.fa4(x3))
 
         # -- define layers to visualize here (optional) ---
@@ -60,7 +62,18 @@ class Critic(Network):
         self.l3 = nn.Linear(32+5+action_size, int(hidden_size / 2))
         self.l4 = nn.Linear(int(hidden_size / 2), 1)
 
-        self.ln = nn.LayerNorm(32)
+        self.ln1 = nn.LayerNorm(int(hidden_size / 2))
+        self.ln2 = nn.LayerNorm(32)
+        self.ln3 = nn.LayerNorm(int(hidden_size / 2))
+
+        self.l5 = nn.Linear(state_size-5, int(hidden_size / 2))
+        self.l6 = nn.Linear(int(hidden_size / 2), 32)
+        self.l7 = nn.Linear(32+5+action_size, int(hidden_size / 2))
+        self.l8 = nn.Linear(int(hidden_size / 2), 1)
+
+        self.ln5 = nn.LayerNorm(int(hidden_size / 2))
+        self.ln6 = nn.LayerNorm(32)
+        self.ln7 = nn.LayerNorm(int(hidden_size / 2))
         # --- define layers until here ---
 
         self.apply(super().init_weights)
@@ -69,12 +82,18 @@ class Critic(Network):
         # --- define forward pass here ---
         scan = states[:,:-5]
         other = states[:,-5:]
-        x1 = torch.relu(self.l1(scan))
-        x2 = self.ln(self.l2(x1))
+        x1 = torch.relu(self.ln1(self.l1(scan)))
+        x2 = torch.relu(self.ln2(self.l2(x1)))
         concat = torch.cat([x2, other, actions], dim=-1)
-        x3 = torch.relu(self.l3(concat))
-        value = self.l4(x3)
-        return value
+        x3 = torch.relu(self.ln3(self.l3(concat)))
+        value1 = self.l4(x3)
+
+        x5 = torch.relu(self.ln5(self.l5(scan)))
+        x6 = torch.relu(self.ln6(self.l6(x5)))
+        concat2 = torch.cat([x6, other, actions], dim=-1)
+        x7 = torch.relu(self.ln7(self.l7(concat2)))
+        value2 = self.l8(x7)
+        return value1, value2
 
 
 class DDPG(OffPolicyAgent):
@@ -107,9 +126,9 @@ class DDPG(OffPolicyAgent):
     # TODO:随机动作
     def get_action_random(self):
         random_x = np.random.uniform(-1.0, 1.0)
-        random_y = np.array([0.0])
+        random_y = np.array(0.0)
         random_yaw = np.random.uniform(-1.0, 1.0)
-        random_action = [random_x, random_y, random_yaw]
+        random_action = [random_x, random_yaw]
 
         # action_list = [[0.5, 0.0, 0.0], [0.4, 0.2, 0.0], [0.2, 0.4, 0.0], [0.0, 0.5, 0.0], 
         #                [0.4, -0.2, 0.0], [0.2, -0.4, 0.0], [0.0, -0.5, 0.0], 
@@ -130,11 +149,17 @@ class DDPG(OffPolicyAgent):
         return random_action
 
     def train(self, state, action, reward, state_next, done):
+        # data augumentation
+        noise = 0.1*torch.randn_like(state).cuda()
+        state[:,:-5] = torch.clip(state[:,:-5] + noise[:,:-5],0.1,1.0)
+
         # optimize critic
         action_next = self.actor_target(state_next)
-        Q_next = self.critic_target(state_next, action_next)
+        Q_next1, Q_next2 = self.critic_target(state_next, action_next)
+        Q_next = torch.min(torch.cat([Q_next1, Q_next2], dim=-1), -1, keepdim=True)[0]
         Q_target = reward + (1 - done) * self.discount_factor * Q_next
-        Q = self.critic(state, action)
+        Q1, Q2 = self.critic(state, action)
+        Q = torch.cat([Q1, Q2], dim=-1)
 
         loss_critic = self.loss_function(Q, Q_target)
         self.critic_optimizer.zero_grad()
@@ -143,7 +168,9 @@ class DDPG(OffPolicyAgent):
         self.critic_optimizer.step()
 
         pred_a_sample = self.actor(state)
-        loss_actor = -1 * (self.critic(state, pred_a_sample)).mean()
+        Q_1, Q_2 = self.critic(state, pred_a_sample)
+        Q_ = torch.min(torch.cat([Q_1, Q_2], dim=-1), -1, keepdim=True)[0]
+        loss_actor = -1 * (Q_).mean()
         
         self.actor_optimizer.zero_grad()
         loss_actor.backward()

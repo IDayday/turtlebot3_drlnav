@@ -148,24 +148,24 @@ class DrlAgent(Node):
                     x = joy_action.linear.x
                     y = 0.0
                     z = joy_action.angular.z
-                    action = [0.0, 0.0, 0.0]
+                    action = [0.0, 0.0]
 
                     if x < 0:
                         x = -0.1 if x <= -0.1 else x
                     action_current = [x, y, z]
                     action[0] = (action_current[0]-0.45)*(2/1.1)
-                    action[2] = z
+                    action[1] = z
                     # print("buffer_action: ", action)
                 else:
+                    action_env = [0.0, 0.0, 0.0]
                     if self.training and self.total_steps < self.observe_steps:
                         action = self.model.get_action_random()                                    # x[-1.0,1.0]
                     else:
                         action = self.model.get_action(state, self.training, step, ENABLE_VISUAL)  # x[-1,1]
-                    action_env = copy.deepcopy(action)
-                    action_env[0] = action_env[0]*(1.1/2) + (-0.1 + 1.0)/2                         # x[-0.1,1.0]
-                    action_env[1] = action_env[1]*0.0                                          # y[-0.1,0.1]
+                    action_env[0] = action[0]*(1.1/2) + (-0.1 + 1.0)/2                             # x[-0.1,1.0]
+                    action_env[2] = action[1]
                     action_current = action_env
-                    print("action:", action_current)
+                    # print("action:", action_current)
                     if self.algorithm == 'dqn':
                         action_current = self.model.possible_actions[action]
 
@@ -183,7 +183,10 @@ class DrlAgent(Node):
 
                 # Train
                 if self.training == True:
-                    if action_current[0] != 0.0 and action_current[2] != 0.0:
+                    if HUMAN_PLAY:
+                        if action_current[0] != 0.0 and action_current[2] != 0.0:
+                            self.replay_buffer.add_sample(state, action, [reward], next_state, [episode_done])
+                    else:
                         self.replay_buffer.add_sample(state, action, [reward], next_state, [episode_done])
                     if self.replay_buffer.get_length() >= self.model.batch_size and self.total_steps > self.observe_steps:
                         loss_c, loss_a, = self.model._train(self.replay_buffer)
