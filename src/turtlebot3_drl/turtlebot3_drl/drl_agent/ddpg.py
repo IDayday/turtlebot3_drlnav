@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 from turtlebot3_drl.drl_environment.reward import REWARD_FUNCTION
-from ..common.settings import ENABLE_BACKWARD, ENABLE_STACKING
+from ..common.settings import ENABLE_BACKWARD, ENABLE_STACKING, EXTRA_SIZE
 
 from ..common.ounoise import OUNoise
 from ..drl_environment.drl_environment import NUM_SCAN_SAMPLES
@@ -22,9 +22,9 @@ class Actor(Network):
     def __init__(self, name, state_size, action_size, hidden_size):
         super(Actor, self).__init__(name)
         # --- define layers here ---
-        self.fa1 = nn.Linear(state_size-5, hidden_size)
+        self.fa1 = nn.Linear(state_size-EXTRA_SIZE, hidden_size)
         self.fa2 = nn.Linear(hidden_size, 32)
-        self.fa3 = nn.Linear(32+5, int(hidden_size/2))
+        self.fa3 = nn.Linear(32+EXTRA_SIZE, int(hidden_size/2))
         self.fa4 = nn.Linear(int(hidden_size/2), action_size)
 
         self.ln1 = nn.LayerNorm(hidden_size)
@@ -38,8 +38,8 @@ class Actor(Network):
     # TODO: x速度后处理
     def forward(self, states, visualize=False):
         # --- define forward pass here ---
-        scan = states[:,:-5]
-        other = states[:,-5:]
+        scan = states[:,:-EXTRA_SIZE]
+        other = states[:,-EXTRA_SIZE:]
         x1 = torch.relu(self.ln1(self.fa1(scan)))
         x2 = torch.relu(self.ln2(self.fa2(x1)))
         concat = torch.cat([x2, other],dim=-1)
@@ -57,18 +57,18 @@ class Critic(Network):
         super(Critic, self).__init__(name)
 
         # --- define layers here ---
-        self.l1 = nn.Linear(state_size-5, int(hidden_size / 2))
+        self.l1 = nn.Linear(state_size-EXTRA_SIZE, int(hidden_size / 2))
         self.l2 = nn.Linear(int(hidden_size / 2), 32)
-        self.l3 = nn.Linear(32+5+action_size, int(hidden_size / 2))
+        self.l3 = nn.Linear(32+EXTRA_SIZE+action_size, int(hidden_size / 2))
         self.l4 = nn.Linear(int(hidden_size / 2), 1)
 
         self.ln1 = nn.LayerNorm(int(hidden_size / 2))
         self.ln2 = nn.LayerNorm(32)
         self.ln3 = nn.LayerNorm(int(hidden_size / 2))
 
-        self.l5 = nn.Linear(state_size-5, int(hidden_size / 2))
+        self.l5 = nn.Linear(state_size-EXTRA_SIZE, int(hidden_size / 2))
         self.l6 = nn.Linear(int(hidden_size / 2), 32)
-        self.l7 = nn.Linear(32+5+action_size, int(hidden_size / 2))
+        self.l7 = nn.Linear(32+EXTRA_SIZE+action_size, int(hidden_size / 2))
         self.l8 = nn.Linear(int(hidden_size / 2), 1)
 
         self.ln5 = nn.LayerNorm(int(hidden_size / 2))
@@ -80,8 +80,8 @@ class Critic(Network):
 
     def forward(self, states, actions):
         # --- define forward pass here ---
-        scan = states[:,:-5]
-        other = states[:,-5:]
+        scan = states[:,:-EXTRA_SIZE]
+        other = states[:,-EXTRA_SIZE:]
         x1 = torch.relu(self.ln1(self.l1(scan)))
         x2 = torch.relu(self.ln2(self.l2(x1)))
         concat = torch.cat([x2, other, actions], dim=-1)
@@ -151,7 +151,7 @@ class DDPG(OffPolicyAgent):
     def train(self, state, action, reward, state_next, done):
         # data augumentation
         noise = 0.1*torch.randn_like(state).cuda()
-        state[:,:-5] = torch.clip(state[:,:-5] + noise[:,:-5],0.1,1.0)
+        state[:,:-EXTRA_SIZE] = torch.clip(state[:,:-EXTRA_SIZE] + noise[:,:-EXTRA_SIZE],0.1,1.0)
 
         # optimize critic
         action_next = self.actor_target(state_next)

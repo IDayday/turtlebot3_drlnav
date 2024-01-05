@@ -22,7 +22,7 @@ from turtlebot3_drl.drl_environment.reward import REWARD_FUNCTION
 from ..common.settings import ENABLE_BACKWARD, ENABLE_STACKING, ACTION_SIZE, HIDDEN_SIZE, BATCH_SIZE, BUFFER_SIZE, DISCOUNT_FACTOR, \
                                  LEARNING_RATE, TAU, STEP_TIME, EPSILON_DECAY, EPSILON_MINIMUM, STACK_DEPTH, FRAME_SKIP, STATE_SIZE, \
                                  ARENA_LENGTH, ARENA_WIDTH, SPEED_LINEAR_MAX, SPEED_ANGULAR_MAX, LIDAR_DISTANCE_CAP, THRESHOLD_COLLISION, \
-                                 THREHSOLD_GOAL, OBSTACLE_RADIUS, DIRECTION_SIZE
+                                 THREHSOLD_GOAL, OBSTACLE_RADIUS, DIRECTION_SIZE, EXTRA_SIZE
 from ..drl_environment.drl_environment import NUM_SCAN_SAMPLES
 
 
@@ -34,7 +34,7 @@ class OffPolicyAgent(ABC):
 
         # Network structure
         # TODO: 网络参数：输入输出
-        self.state_size         = STATE_SIZE + 5
+        self.state_size         = STATE_SIZE + EXTRA_SIZE
         self.action_size        = ACTION_SIZE
         self.hidden_size        = HIDDEN_SIZE
         self.input_size         = self.state_size

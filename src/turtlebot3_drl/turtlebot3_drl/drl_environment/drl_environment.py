@@ -62,6 +62,9 @@ class DRLEnvironment(Node):
         self.robot_x, self.robot_y = 0.0, 0.0
         self.robot_x_prev, self.robot_y_prev = 0.0, 0.0
         self.robot_x_tmp, self.robot_y_tmp = 0.0, 0.0
+        self.robot_speed_x = 0.0
+        self.robot_speed_y = 0.0
+        self.robot_speed_z = 0.0
         self.robot_heading = 0.0
         self.total_distance = 0.0
         self.robot_tilt = 0.0
@@ -173,6 +176,11 @@ class DRLEnvironment(Node):
         # print("distance_to_goal", distance_to_goal)
         self.goal_angle = goal_angle
 
+        # speed
+        self.robot_speed_x = msg.twist.twist.linear.x
+        self.robot_speed_y = msg.twist.twist.linear.y
+        self.robot_speed_z = msg.twist.twist.angular.z
+
     # TODO: 传感器数据处理
     def scan_callback(self, msg):
         if len(msg.ranges) != NUM_SCAN_SAMPLES:
@@ -234,9 +242,13 @@ class DRLEnvironment(Node):
         state.append(float(self.goal_angle) / math.pi)                                      # range: [-1, 1]
         # state.append(float(self.goal_x - self.robot_x))
         # state.append(float(self.goal_y - self.robot_y))
-        state.append(float(action_linear_previous[LINEAR_X]))                               # range: [-1, 1]
-        state.append(float(action_linear_previous[LINEAR_Y]))                               # range: [-1, 1]
-        state.append(float(action_angular_previous))                                        # range: [-1, 1]
+        state.append(float(self.robot_speed_x))                               # range: [-1, 1]
+        state.append(float(self.robot_speed_y))                               # range: [-1, 1]
+        state.append(float(self.robot_speed_z))                               # range: [-1, 1]
+        state.append(float(action_linear_previous[LINEAR_X]))                 # range: [-1, 1]
+        state.append(float(action_linear_previous[LINEAR_Y]))                 # range: [-1, 1]
+        state.append(float(action_angular_previous)) 
+
         self.local_step += 1
 
         if self.local_step <= 30: # Grace period to wait for simulation reset
