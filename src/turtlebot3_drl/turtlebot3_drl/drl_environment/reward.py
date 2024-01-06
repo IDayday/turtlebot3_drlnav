@@ -113,17 +113,17 @@ def get_reward_D(succeed, state_tmp_list, goal_dist, goal_angle, min_obstacle_di
         p_state = state_tmp_list[1]
         state = state_tmp_list[2]
 
-        pp_vx = pp_state[-3]
-        pp_vy = pp_state[-2]
-        pp_vang = pp_state[-1]
+        pp_vx = pp_state[-6]
+        pp_vy = pp_state[-5]
+        pp_vang = pp_state[-4]
 
-        p_vx = p_state[-3]
-        p_vy = p_state[-2]
-        p_vang = p_state[-1]
+        p_vx = p_state[-4]
+        p_vy = p_state[-5]
+        p_vang = p_state[-6]
 
-        vx = state[-3]
-        vy = state[-2]
-        vang = state[-1]
+        vx = state[-4]
+        vy = state[-5]
+        vang = state[-6]
 
         acc_x = (vx - p_vx)/0.1
         acc_y = (vy - p_vy)/0.1

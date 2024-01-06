@@ -13,7 +13,7 @@ GRAPH_DRAW_INTERVAL      = 100       # Draw the graph every N episodes (drawing 
 GRAPH_AVERAGE_REWARD     = 100       # Average the reward graph over every N episodes
 FINTUNE_TIMES            = 0
 # PROJECT_PATH             = "/home/pdf/workspace/RL/turtlebot3_drlnav/src/turtlebot3_drl/turtlebot3_drl"
-PROJECT_PATH             = "/root/project/turtlebot3_drlnav/src/turtlebot3_drl/turtlebot3_drl"
+PROJECT_PATH             = "/home/dayday/project/turtlebot3_drlnav/src/turtlebot3_drl/turtlebot3_drl"
 
 # ===================================================================== #
 #                         ENVIRONMENT SETTINGS                          #
@@ -71,6 +71,7 @@ SEED            = 42
 
 BATCH_SIZE      = 512       # Number of samples per training batch
 BUFFER_SIZE     = 1000000   # Number of samples stored in replay buffer before FIFO
+NEARLY_DATA     = 50
 DISCOUNT_FACTOR = 0.99
 LEARNING_RATE   = 0.005
 TAU             = 0.003
