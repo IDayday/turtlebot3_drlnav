@@ -2,6 +2,7 @@ import numpy as np
 import random
 from collections import deque
 import itertools
+from .settings import NEARLY_DATA
 
 
 class ReplayBuffer:
@@ -11,8 +12,13 @@ class ReplayBuffer:
 
     def sample(self, batchsize):
         batch = []
-        batchsize = min(batchsize, self.get_length())
-        batch = random.sample(self.buffer, batchsize)
+        buffer_length = self.get_length()
+        batchsize = min(batchsize, buffer_length)
+        new_trajectory = list(itertools.islice(self.buffer, buffer_length-NEARLY_DATA, buffer_length))
+        print("new_trajectory",new_trajectory)
+        batch = random.sample(self.buffer, batchsize-NEARLY_DATA)
+        print("batch",batch)
+        batch.append(new_trajectory)
         s_array = np.float32([array[0] for array in batch])
         a_array = np.float32([array[1] for array in batch])
         r_array = np.float32([array[2] for array in batch])

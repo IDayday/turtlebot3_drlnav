@@ -8,8 +8,9 @@ import random
 
 
 import torch
-
-
+from collections import deque
+import numpy as np
+import itertools
 # a = torch.randint(0,5,(10,1))
 # b = torch.randint(0,5,(10,1))
 # c = torch.cat([a,b],dim=-1)
@@ -17,5 +18,16 @@ import torch
 # print(b)
 # print(c)
 
-a = torch.randn(10,5)
-print(a)
+# a = torch.randn(10,5)
+# print(a)
+
+
+buffer = deque(maxlen=100)
+a = np.arange(0,10)
+b = np.arange(11,21)
+for i in range(10):
+    buffer.append((a[i],b[i]))
+print(buffer)
+length = len(buffer)
+c = list(itertools.islice(buffer, length-3, length))
+print(c)
