@@ -1,0 +1,22 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <model name='obs_box'>
+    <pose frame=''>0 0 0 0 -0 -1.5708</pose>
+    <link name="obs_box">
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>1.0 1.0 1.0</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>1.0 1.0 1.0</size>
+          </box>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

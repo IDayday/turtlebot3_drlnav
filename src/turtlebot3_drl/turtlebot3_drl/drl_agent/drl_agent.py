@@ -115,7 +115,7 @@ class DrlAgent(Node):
         if self.training:
             episode_num = 100000
         else:
-            episode_num = 200
+            episode_num = 40*3
         self.process(episode_num)
 
     def joyaction_callback(self, msg):
@@ -145,18 +145,19 @@ class DrlAgent(Node):
 
                 if HUMAN_PLAY:
                     joy_action = copy.deepcopy(self.joy_action)
-                    action = [joy_action.linear.x, joy_action.linear.y,  joy_action.angular.z]
+                    action_current = [joy_action.linear.x, joy_action.linear.y,  joy_action.angular.z]
                     # if all(abs(element) < 0.001 for element in action):
                     #     continue
                     # print("real_action: ", action_current)
-                    # linear_x = action_current[0]/SPEED_LINEAR_MAX
-                    # linear_y = action_current[1]/SPEED_LINEAR_MAX
-                    # angular  = action_current[2]/SPEED_ANGULAR_MAX
-                    # linear_x = action[0]*(1.1/2) + (-0.1 + 1.0)/2
-                    # linear_y = action[1]*(0.2/2)
-                    angular  = action[2]
-                    # action_current = [linear_x, linear_y, angular]
-                    action_current = action
+                    linear_x = joy_action.linear.x
+                    linear_y = joy_action.linear.y
+                    # angular  = joy_action.angular.z
+                    action_current[0] = -0.1 if linear_x < -0.1 else linear_x
+                    action_current[1] = 0.1 * linear_y
+
+                    action = copy.deepcopy(action_current)
+                    action[0] = (action[0] - 0.45)*2/1.1
+                    action[1] = action[1]*2/0.2
                     # print("buffer_action: ", action)
                 else:
                     if self.training and self.total_steps < self.observe_steps:
@@ -164,8 +165,8 @@ class DrlAgent(Node):
                     else:
                         action = self.model.get_action(state, self.training, step, ENABLE_VISUAL)  # x[-1,1]
                     action_env = copy.deepcopy(action)
-                    # action_env[0] = action_env[0]*(1.1/2) + (-0.1 + 1.0)/2                         # x[-0.1,1.0]
-                    # action_env[1] = action_env[1]*(0.2/2)                                          # y[-0.1,0.1]
+                    action_env[0] = action_env[0]*(1.1/2) + (-0.1 + 1.0)/2                         # x[-0.1,1.0]
+                    action_env[1] = action_env[1]*(0.2/2)                                          # y[-0.1,0.1]
                     action_current = action_env
                     # print("action:", action_current)
                     if self.algorithm == 'dqn':
@@ -212,7 +213,7 @@ class DrlAgent(Node):
 
             self.episode += 1
             print(f"Epi: {self.episode:<5}R: {reward_sum:<8.0f}outcome: {util.translate_outcome(outcome):<13}", end='')
-            print(f"steps: {step:<6}steps_total: {self.total_steps:<7}time: {eps_duration:<6.2f}")
+            print(f"steps: {step:<6}steps_total: {self.total_steps:<7}time: {eps_duration:<6.2f}dist_traveled: {dist_traveled:<6.2f}")
 
             if (not self.training):
                 self.logger.update_test_results(step, outcome, dist_traveled, eps_duration, 0)

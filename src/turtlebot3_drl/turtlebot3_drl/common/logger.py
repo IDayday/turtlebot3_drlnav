@@ -40,7 +40,7 @@ class Logger():
         success_count = self.test_outcome[SUCCESS]
 
         self.file_log.write(f"{self.test_entry}, {outcome}, {step}, {episode_duration}, {distance_traveled}, {self.test_outcome[SUCCESS]}/{self.test_outcome[COLLISION_WALL]}/{self.test_outcome[COLLISION_OBSTACLE]}/{self.test_outcome[TIMEOUT]}/{self.test_outcome[TUMBLE]}\n")
-        if self.test_entry > 0 and self.test_entry % 100 == 0:
+        if self.test_entry > 0 and self.test_entry % 40 == 0:
             self.update_comparison_file(self.test_entry, self.test_outcome[SUCCESS] / (self.test_entry / 100), 0)
             self.file_log.write(f"Successes: {self.test_outcome[SUCCESS]} ({self.test_outcome[SUCCESS]/self.test_entry:.2%}), "
             f"collision (wall): {self.test_outcome[COLLISION_WALL]} ({self.test_outcome[COLLISION_WALL]/self.test_entry:.2%}), "
@@ -72,7 +72,7 @@ class Logger():
 
     def init_testing_log(self, datetime, path, stage, load_episode):
         file_log = open(os.path.join(path, "_test_stage" + stage + "_eps" + str(load_episode) + "_" + datetime + '.txt'), 'w+')
-        file_log.write(f"episode, outcome, step, episode_duration, distance, s/cw/co/t\n")
+        file_log.write(f"episode, outcome, step, episode_duration, distance, success/cw/co/timeout/tumble\n")
         return file_log
 
     def init_comparison_file(self, datetime, path, stage, hyperparameters, algorithm, session, episode):

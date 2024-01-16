@@ -142,8 +142,8 @@ class DRLEnvironment(Node):
             self.robot_x = msg.pose.pose.position.x - self.robot_x_tmp
             self.robot_y = msg.pose.pose.position.y - self.robot_y_tmp
         else:
-            self.robot_x = msg.pose.pose.position.x
-            self.robot_y = msg.pose.pose.position.y
+            self.robot_x = msg.pose.pose.position.x - self.robot_x_tmp
+            self.robot_y = msg.pose.pose.position.y - self.robot_y_tmp
         _, _, self.robot_heading = util.euler_from_quaternion(msg.pose.pose.orientation)
         self.robot_tilt = msg.pose.pose.orientation.y
         # print("robot_tilt", self.robot_tilt)
@@ -212,9 +212,9 @@ class DRLEnvironment(Node):
         # TODO: 修正里程计
         req.robot_pose_x = self.robot_x
         req.robot_pose_y = self.robot_y
-        if success != 1:
-            self.robot_x_tmp += self.robot_x
-            self.robot_y_tmp += self.robot_y
+        # if success != 1:
+        self.robot_x_tmp += self.robot_x
+        self.robot_y_tmp += self.robot_y
         req.radius = np.clip(self.difficulty_radius, 0.5, 4)
         if success:
             self.difficulty_radius *= 1.01

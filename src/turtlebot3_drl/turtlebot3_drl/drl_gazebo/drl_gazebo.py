@@ -27,6 +27,8 @@ import sys
 from gazebo_msgs.srv import DeleteEntity, SpawnEntity
 from std_srvs.srv import Empty
 from geometry_msgs.msg import Pose
+# from tf.transformations import quaternion_from_euler
+import tf_transformations
 
 import rclpy
 from rclpy.qos import QoSProfile
@@ -46,12 +48,29 @@ class DRLGazebo(Node):
         ** Initialise variables
         ************************************************************"""
         # TODO: 路径修改？
+        self.obs_entity = ["", "", ""]
+        self.obs_entity_name = ["", "", ""]
         self.entity_dir_path = (os.path.dirname(os.path.realpath(__file__))).replace(
             'turtlebot3_drl/lib/python3.8/site-packages/turtlebot3_drl/drl_gazebo',
             'turtlebot3_gazebo/share/turtlebot3_gazebo/models/turtlebot3_drl_world/goal_box')
         self.entity_path = os.path.join(self.entity_dir_path, 'model.sdf')
         self.entity = open(self.entity_path, 'r').read()
         self.entity_name = 'goal'
+
+        self.obs_dir_path = (os.path.dirname(os.path.realpath(__file__))).replace(
+            'turtlebot3_drl/lib/python3.8/site-packages/turtlebot3_drl/drl_gazebo',
+            'turtlebot3_gazebo/share/turtlebot3_gazebo/models/turtlebot3_drl_world/obs_box')
+        self.obs_path = os.path.join(self.obs_dir_path, 'model.sdf')
+        self.obs_entity[1] = open(self.obs_path, 'r').read()
+        self.obs_entity_name[1] = 'obs'
+
+        self.obs_dir_path = (os.path.dirname(os.path.realpath(__file__))).replace(
+            'turtlebot3_drl/lib/python3.8/site-packages/turtlebot3_drl/drl_gazebo',
+            'turtlebot3_gazebo/share/turtlebot3_gazebo/models/turtlebot3_drl_world/obs_box_multi')
+        self.obs_path = os.path.join(self.obs_dir_path, 'model.sdf')
+        self.obs_entity[2] = open(self.obs_path, 'r').read()
+        self.obs_entity_name[2] = 'obs_multi'
+
         self.train = train
 
         with open(os.getenv('DRLNAV_BASE_PATH') + '/tmp/drlnav_current_stage.txt', 'r') as f:
@@ -59,10 +78,14 @@ class DRLGazebo(Node):
         print(f"running on stage: {self.stage}, dynamic goals enabled: {ENABLE_DYNAMIC_GOALS}")
 
         self.prev_x, self.prev_y = -1, -1
-        self.goal_x, self.goal_y = 2.0, 0.0
+        self.goal_x, self.goal_y = 5.0, 0.0
+        self.obs_x, self.obs_y, self.obs_yaw = 2.5, 0.0, 0.0
+        self.timer_sw = 0
         self.reset_env_times = 0
         self.warm_times = 300
         self.learning_times = 200
+        self.test_times = 10
+        self.obs_scene = 3
 
         """************************************************************
         ** Initialise ROS publishers, subscribers and clients
@@ -89,10 +112,16 @@ class DRLGazebo(Node):
     ** Callback functions and relevant functions
     *******************************************************************************"""
     def timer_callback(self):
-        self.spawn_entity()
+        if  self.timer_sw == 0:
+            self.timer_sw = 1
+            self.spawn_entity()
+        else:
+            self.timer_sw = 0
+            self.spawn_obs_entity()
 
     def init_callback(self):
         self.delete_entity()
+        self.delete_obs_entity()
         self.reset_simulation()
         self.publish_callback()
         print("Init, goal pose:", self.goal_x, self.goal_y)
@@ -105,9 +134,12 @@ class DRLGazebo(Node):
         goal_pose.position.y = self.goal_y
         self.goal_pose_pub.publish(goal_pose)
         self.spawn_entity()
+        self.spawn_obs_entity()
 
     def task_succeed_callback(self, request, response):
         self.delete_entity()
+        self.delete_obs_entity()
+        self.reset_simulation()
         if ENABLE_TRUE_RANDOM_GOALS:
             self.generate_random_goal()
             print(f"success: generate (random) a new goal, goal pose: {self.goal_x:.2f}, {self.goal_y:.2f}")
@@ -122,6 +154,7 @@ class DRLGazebo(Node):
 
     def task_fail_callback(self, request, response):
         self.delete_entity()
+        self.delete_obs_entity()
         self.reset_simulation()
         if ENABLE_TRUE_RANDOM_GOALS:
             self.generate_random_goal()
@@ -195,16 +228,26 @@ class DRLGazebo(Node):
         if self.train:
             self.goal_x , self.goal_y = self.random_goals()
         else:
-            self.goal_x = random.randrange(-60, 60) / 10.0
-            self.goal_y = random.randrange(-60, 60) / 10.0
+            goal_pose_list = [[5.0, 0.0], [0.0, -5.0], [-5.0, 0.0], [0.0, 5.0]]
+            obs_pose_list = [[2.5, 0.0, 0.0], [0.0, -2.5, 1.57], [-2.5, 0.0, 3.14], [0.0, 2.5, -1.57]]
+            # obs_yaw_list = [0.0, 1.57, 3.14, -1.57]
+            index = random.randrange(0, len(goal_pose_list))
+            self.goal_x = float(goal_pose_list[int((self.reset_env_times+1)%(self.test_times*4)/self.test_times%4)][0])
+            self.goal_y = float(goal_pose_list[int((self.reset_env_times+1)%(self.test_times*4)/self.test_times%4)][1])
+            self.obs_x = float(obs_pose_list[int((self.reset_env_times+1)%(self.test_times*4)/self.test_times%4)][0])
+            self.obs_y = float(obs_pose_list[int((self.reset_env_times+1)%(self.test_times*4)/self.test_times%4)][1])
+            self.obs_yaw = float(obs_pose_list[int((self.reset_env_times+1)%(self.test_times*4)/self.test_times%4)][2])
+            # self.goal_x = random.randrange(-60, 60) / 10.0
+            # self.goal_y = random.randrange(-60, 60) / 10.0
         while not self.goal_is_valid(self.goal_x, self.goal_y):
             self.goal_x , self.goal_y = self.random_goals()
-        tries += 1
-        if tries > 200:
-            print("ERROR: cannot find valid new goal, resestting!")
-            self.delete_entity()
-            self.reset_simulation()
-            self.generate_goal_pose()
+            tries += 1
+            if tries > 200:
+                print("ERROR: cannot find valid new goal, resestting!")
+                self.delete_entity()
+                self.delete_obs_entity()
+                self.reset_simulation()
+                self.generate_goal_pose()
 
         self.publish_callback()
 
@@ -225,6 +268,7 @@ class DRLGazebo(Node):
             if tries > 100:
                 print("Error! couldn't find valid goal position, resetting..")
                 self.delete_entity()
+                self.delete_obs_entity()
                 self.reset_simulation()
                 self.generate_goal_pose()
                 return
@@ -286,6 +330,13 @@ class DRLGazebo(Node):
             self.get_logger().info('service not available, waiting again...')
         self.delete_entity_client.call_async(req)
 
+    def delete_obs_entity(self):
+        req = DeleteEntity.Request()
+        req.name = self.obs_entity_name[int(self.reset_env_times/(self.test_times*4)%3)]
+        while not self.delete_entity_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('service not available, waiting again...')
+        self.delete_entity_client.call_async(req)
+
     def spawn_entity(self):
         goal_pose = Pose()
         goal_pose.position.x = self.goal_x
@@ -294,6 +345,24 @@ class DRLGazebo(Node):
         req.name = self.entity_name
         req.xml = self.entity
         req.initial_pose = goal_pose
+        while not self.spawn_entity_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('service not available, waiting again...')
+        self.spawn_entity_client.call_async(req)
+
+    def spawn_obs_entity(self):
+        obs_pose = Pose()
+        quaternion = tf_transformations.quaternion_from_euler(0, 0, self.obs_yaw)
+        obs_pose.position.x = self.obs_x
+        obs_pose.position.y = self.obs_y
+        obs_pose.orientation.x = quaternion[0]
+        obs_pose.orientation.y = quaternion[1]
+        obs_pose.orientation.z = quaternion[2]
+        obs_pose.orientation.w = quaternion[3]
+
+        req = SpawnEntity.Request()
+        req.name = self.obs_entity_name[int(self.reset_env_times/(self.test_times*4)%3)]
+        req.xml = self.obs_entity[int(self.reset_env_times/(self.test_times*4)%3)]
+        req.initial_pose = obs_pose
         while not self.spawn_entity_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
         self.spawn_entity_client.call_async(req)
