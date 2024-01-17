@@ -27,6 +27,7 @@ def main(args):
     j = 0
     base_path = os.getenv('DRLNAV_BASE_PATH') + f"/src/{args.agent_name}/model/{args.file_path}/"
     logfile = glob.glob(base_path + '/_train_*.txt')
+    # logfile = glob.glob(base_path + '/_test_*.txt')
     if len(logfile) != 1:
         print(f"ERROR: found less or more than 1 logfile for: {base_path}")
     df = pd.read_csv(logfile[0])
@@ -75,14 +76,14 @@ def main(args):
     plt.legend(fontsize=20)
     plt.ylim(0,1.05)
     plt.grid(True, linestyle='--')
-    plt.savefig(base_path + "outcomes.png", format="png", bbox_inches="tight")
+    plt.savefig(base_path + "test_outcomes.png", format="png", bbox_inches="tight")
     plt.show()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--agent_name",           default="cyberdog_drl", type=str)
-    parser.add_argument("--file_path",            default="dayday-pc/ddpg_44_stage_4", type=str)
+    parser.add_argument("--file_path",            default="dayday-pc/ddpg_47_stage_4", type=str)
     args = parser.parse_args()
     print(args)
     main(args)

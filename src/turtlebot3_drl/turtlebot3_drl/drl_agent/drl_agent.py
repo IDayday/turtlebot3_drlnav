@@ -145,28 +145,25 @@ class DrlAgent(Node):
 
                 if HUMAN_PLAY:
                     joy_action = copy.deepcopy(self.joy_action)
-                    action_current = [joy_action.linear.x, joy_action.linear.y,  joy_action.angular.z]
-                    # if all(abs(element) < 0.001 for element in action):
-                    #     continue
-                    # print("real_action: ", action_current)
-                    linear_x = joy_action.linear.x
-                    linear_y = joy_action.linear.y
-                    # angular  = joy_action.angular.z
-                    action_current[0] = -0.1 if linear_x < -0.1 else linear_x
-                    action_current[1] = 0.1 * linear_y
+                    x = joy_action.linear.x
+                    y = 0.0
+                    z = joy_action.angular.z
+                    action = [0.0, 0.0]
 
-                    action = copy.deepcopy(action_current)
-                    action[0] = (action[0] - 0.45)*2/1.1
-                    action[1] = action[1]*2/0.2
+                    if x < 0:
+                        x = -0.1 if x <= -0.1 else x
+                    action_current = [x, y, z]
+                    action[0] = (action_current[0]-0.45)*(2/1.1)
+                    action[1] = z
                     # print("buffer_action: ", action)
                 else:
+                    action_env = [0.0, 0.0, 0.0]
                     if self.training and self.total_steps < self.observe_steps:
                         action = self.model.get_action_random()                                    # x[-1.0,1.0]
                     else:
                         action = self.model.get_action(state, self.training, step, ENABLE_VISUAL)  # x[-1,1]
-                    action_env = copy.deepcopy(action)
-                    action_env[0] = action_env[0]*(1.1/2) + (-0.1 + 1.0)/2                         # x[-0.1,1.0]
-                    action_env[1] = action_env[1]*(0.2/2)                                          # y[-0.1,0.1]
+                    action_env[0] = action[0]*(1.1/2) + (-0.1 + 1.0)/2                             # x[-0.1,1.0]
+                    action_env[2] = action[1]
                     action_current = action_env
                     # print("action:", action_current)
                     if self.algorithm == 'dqn':
@@ -186,7 +183,11 @@ class DrlAgent(Node):
 
                 # Train
                 if self.training == True:
-                    self.replay_buffer.add_sample(state, action, [reward], next_state, [episode_done])
+                    if HUMAN_PLAY:
+                        if action_current[0] != 0.0 and action_current[2] != 0.0:
+                            self.replay_buffer.add_sample(state, action, [reward], next_state, [episode_done])
+                    else:
+                        self.replay_buffer.add_sample(state, action, [reward], next_state, [episode_done])
                     if self.replay_buffer.get_length() >= self.model.batch_size and self.total_steps > self.observe_steps:
                         loss_c, loss_a, = self.model._train(self.replay_buffer)
                         loss_critic += loss_c

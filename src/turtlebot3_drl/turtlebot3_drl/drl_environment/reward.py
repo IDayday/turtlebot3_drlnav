@@ -1,5 +1,7 @@
-from ..common.settings import REWARD_FUNCTION, COLLISION_OBSTACLE, COLLISION_WALL, TUMBLE, SUCCESS, TIMEOUT, RESULTS_NUM
+from ..common.settings import REWARD_FUNCTION, COLLISION_OBSTACLE, COLLISION_WALL, TUMBLE, SUCCESS, TIMEOUT, RESULTS_NUM, EXTRA_SIZE
 import numpy as np
+import math
+
 goal_dist_initial = 0
 
 reward_function_internal = None
@@ -111,17 +113,17 @@ def get_reward_D(succeed, state_tmp_list, goal_dist, goal_angle, min_obstacle_di
         p_state = state_tmp_list[1]
         state = state_tmp_list[2]
 
-        pp_vx = pp_state[-3]
-        pp_vy = pp_state[-2]
-        pp_vang = pp_state[-1]
+        pp_vx = pp_state[-6]
+        pp_vy = pp_state[-5]
+        pp_vang = pp_state[-4]
 
-        p_vx = p_state[-3]
-        p_vy = p_state[-2]
-        p_vang = p_state[-1]
+        p_vx = p_state[-4]
+        p_vy = p_state[-5]
+        p_vang = p_state[-6]
 
-        vx = state[-3]
-        vy = state[-2]
-        vang = state[-1]
+        vx = state[-4]
+        vy = state[-5]
+        vang = state[-6]
 
         acc_x = (vx - p_vx)/0.1
         acc_y = (vy - p_vy)/0.1
@@ -131,14 +133,15 @@ def get_reward_D(succeed, state_tmp_list, goal_dist, goal_angle, min_obstacle_di
         p_acc_y = (p_vy - pp_vy)/0.1
         p_acc_w = (p_vang - pp_vang)/0.1
 
-        r_acc = - 2*abs(acc_x - p_acc_x) - 1*abs(acc_y - p_acc_y) - 1*abs(acc_w - p_acc_w)
+        r_jerk = - 2*abs(acc_x - p_acc_x) - 1*abs(acc_y - p_acc_y) - 1*abs(acc_w - p_acc_w)
+        r_acc = - (4*math.pow(acc_x,2) + math.pow(acc_y,2) + 2*math.pow(acc_w,2))
 
         # scan [-5, 0]
         if isinstance(state, list):
              state = np.array(state)
         else:
              state = np.array(state.tolist())
-        scan = state[0:-5]
+        scan = state[0:-EXTRA_SIZE]
         r_scan = -(sum(1*(1-scan[:120]))/120 + sum(3*(1-scan[120:240]))/120 + sum(1*(1-scan[240:]))/120)
 
         # [-3.14, 0]
@@ -151,7 +154,7 @@ def get_reward_D(succeed, state_tmp_list, goal_dist, goal_angle, min_obstacle_di
         r_distance = (2 * goal_dist_initial) / (goal_dist_initial + goal_dist) - 1
 
         # [-20, 0]
-        if min_obstacle_dist < 0.25:
+        if min_obstacle_dist < 0.30:
             r_obstacle = -20
         else:
             r_obstacle = 0
@@ -163,7 +166,7 @@ def get_reward_D(succeed, state_tmp_list, goal_dist, goal_angle, min_obstacle_di
         r_vlinear_y = -2 * abs(vy)
         r_vlinear = r_vlinear_x + r_vlinear_y
 
-        reward = 0.1*r_yaw + 0.5*r_distance + 0.24*r_obstacle + 0.01*r_vlinear + 0.09*r_vangular + 0.05*r_acc + 0.01*r_scan
+        reward = 0.15*r_yaw + 0.49*r_distance + 0.1*r_obstacle + 0.01*r_vlinear + 0.09*r_vangular + 0.05*r_acc + 0.1*r_jerk + 0.01*r_scan
 
         if succeed == SUCCESS:
             reward += 500
