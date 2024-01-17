@@ -24,15 +24,16 @@ class StorageManager:
         self.map_location = device
 
         # save files
-        ddpg = PROJECT_PATH + "/drl_agent/ddpg.py"
-        agent = PROJECT_PATH + "/drl_agent/drl_agent.py"
-        env = PROJECT_PATH + "/drl_environment/drl_environment.py"
-        gazebo = PROJECT_PATH + "/drl_gazebo/drl_gazebo.py"
-        setting = PROJECT_PATH + "/common/settings.py"
-        reward = PROJECT_PATH + "/drl_environment/reward.py"
-        files = [ddpg, agent, env, gazebo, setting, reward]
-        for file in files:
-            shutil.copy(file, self.session_dir + "/" + file.split('/')[-1])
+        if not load_session:
+            ddpg = PROJECT_PATH + "/drl_agent/ddpg.py"
+            agent = PROJECT_PATH + "/drl_agent/drl_agent.py"
+            env = PROJECT_PATH + "/drl_environment/drl_environment.py"
+            gazebo = PROJECT_PATH + "/drl_gazebo/drl_gazebo.py"
+            setting = PROJECT_PATH + "/common/settings.py"
+            reward = PROJECT_PATH + "/drl_environment/reward.py"
+            files = [ddpg, agent, env, gazebo, setting, reward]
+            for file in files:
+                shutil.copy(file, self.session_dir + "/" + file.split('/')[-1])
 
     def new_session_dir(self, stage):
         i = 0

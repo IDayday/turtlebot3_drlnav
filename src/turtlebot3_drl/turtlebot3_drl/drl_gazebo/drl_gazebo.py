@@ -37,7 +37,7 @@ from rclpy.node import Node
 from turtlebot3_msgs.srv import RingGoal
 import xml.etree.ElementTree as ET
 from ..drl_environment.drl_environment import ARENA_LENGTH, ARENA_WIDTH, ENABLE_DYNAMIC_GOALS
-from ..common.settings import ENABLE_TRUE_RANDOM_GOALS, SEED, FINTUNE_TIMES
+from ..common.settings import ENABLE_TRUE_RANDOM_GOALS, SEED
 
 NO_GOAL_SPAWN_MARGIN = 0.3 # meters away from any wall
 class DRLGazebo(Node):
@@ -78,8 +78,10 @@ class DRLGazebo(Node):
         print(f"running on stage: {self.stage}, dynamic goals enabled: {ENABLE_DYNAMIC_GOALS}")
 
         self.prev_x, self.prev_y = -1, -1
-        self.goal_x, self.goal_y = 2.0, 0.0
-        self.reset_env_times = FINTUNE_TIMES
+        self.goal_x, self.goal_y = 5.0, 0.0
+        self.obs_x, self.obs_y, self.obs_yaw = 2.5, 0.0, 0.0
+        self.timer_sw = 0
+        self.reset_env_times = 0
         self.warm_times = 300
         self.learning_times = 200
         self.test_times = 10
@@ -170,8 +172,7 @@ class DRLGazebo(Node):
         # 这里判定是否合理的逻辑是：不在中心1/4区域内就不合理
         # if goal_x > ARENA_LENGTH/2 or goal_x < -ARENA_LENGTH/2 or goal_y > ARENA_WIDTH/2 or goal_y < -ARENA_WIDTH/2:
         #     return False
-        if 2.0 < goal_x < 4.0 or 2.0 < goal_y < 4.0:
-            return False
+        
         # 和障碍物重叠就不合理
         for obstacle in self.obstacle_coordinates:
             if goal_x < obstacle[0][0] and goal_x > obstacle[2][0]:
@@ -227,8 +228,17 @@ class DRLGazebo(Node):
         if self.train:
             self.goal_x , self.goal_y = self.random_goals()
         else:
-            self.goal_x = random.randrange(-55, 55) / 10.0
-            self.goal_y = random.randrange(-55, 55) / 10.0
+            goal_pose_list = [[5.0, 0.0], [0.0, -5.0], [-5.0, 0.0], [0.0, 5.0]]
+            obs_pose_list = [[2.5, 0.0, 0.0], [0.0, -2.5, 1.57], [-2.5, 0.0, 3.14], [0.0, 2.5, -1.57]]
+            # obs_yaw_list = [0.0, 1.57, 3.14, -1.57]
+            index = random.randrange(0, len(goal_pose_list))
+            self.goal_x = float(goal_pose_list[int((self.reset_env_times+1)%(self.test_times*4)/self.test_times%4)][0])
+            self.goal_y = float(goal_pose_list[int((self.reset_env_times+1)%(self.test_times*4)/self.test_times%4)][1])
+            self.obs_x = float(obs_pose_list[int((self.reset_env_times+1)%(self.test_times*4)/self.test_times%4)][0])
+            self.obs_y = float(obs_pose_list[int((self.reset_env_times+1)%(self.test_times*4)/self.test_times%4)][1])
+            self.obs_yaw = float(obs_pose_list[int((self.reset_env_times+1)%(self.test_times*4)/self.test_times%4)][2])
+            # self.goal_x = random.randrange(-60, 60) / 10.0
+            # self.goal_y = random.randrange(-60, 60) / 10.0
         while not self.goal_is_valid(self.goal_x, self.goal_y):
             self.goal_x , self.goal_y = self.random_goals()
             tries += 1

@@ -24,13 +24,15 @@ class Logger():
         self.best_episode_success = 0
 
         datetime = time.strftime("%Y%m%d-%H%M%S")
+        self.session_dir = session_dir
+        self.load_episode = load_episode
         self.file_comparison = self.init_comparison_file(datetime, machine_dir, stage, hyperparameters, algorithm, session, load_episode)
         if self.is_training:
             self.file_log = self.init_training_log(datetime, session_dir, stage, model_config)
         else:
             self.file_log = self.init_testing_log(datetime, session_dir, stage, load_episode)
 
-    def update_test_results(self, step, outcome, distance_traveled, episode_duration, swerving_sum):
+    def update_test_results(self, step, outcome, distance_traveled, episode_duration, swerving_sum, reward_sum, action_list):
         self.test_entry += 1
         self.test_outcome[outcome] += 1
         if outcome == SUCCESS:
@@ -39,7 +41,7 @@ class Logger():
             self.test_swerving.append(swerving_sum/step)
         success_count = self.test_outcome[SUCCESS]
 
-        self.file_log.write(f"{self.test_entry}, {outcome}, {step}, {episode_duration}, {distance_traveled}, {self.test_outcome[SUCCESS]}/{self.test_outcome[COLLISION_WALL]}/{self.test_outcome[COLLISION_OBSTACLE]}/{self.test_outcome[TIMEOUT]}/{self.test_outcome[TUMBLE]}\n")
+        self.file_log.write(f"{self.test_entry}, {outcome}, {step}, {reward_sum}, {episode_duration}, {distance_traveled}, {self.test_outcome[SUCCESS]}/{self.test_outcome[COLLISION_WALL]}/{self.test_outcome[COLLISION_OBSTACLE]}/{self.test_outcome[TIMEOUT]}/{self.test_outcome[TUMBLE]}\n")
         if self.test_entry > 0 and self.test_entry % 40 == 0:
             self.update_comparison_file(self.test_entry, self.test_outcome[SUCCESS] / (self.test_entry / 100), 0)
             self.file_log.write(f"Successes: {self.test_outcome[SUCCESS]} ({self.test_outcome[SUCCESS]/self.test_entry:.2%}), "
@@ -61,6 +63,12 @@ class Logger():
                 print(f"distance: {sum(self.test_distance)/success_count:.3f}, "
                       f"swerving: {sum(self.test_swerving)/success_count:.3f}, "
                       f"duration: {sum(self.test_duration)/success_count:.3f}")
+        # log speed
+        datetime = time.strftime("%Y%m%d-%H%M%S")
+        speed_log = self.init_speed_log(datetime, self.session_dir, self.stage, self.load_episode)
+        length = len(action_list)
+        for i in range(length):
+            speed_log.write(f"{i+1}, {action_list[i][0]}, {action_list[i][1]}, {action_list[i][2]}\n")
 
 
     def init_training_log(self, datetime, path, stage, model_config):
@@ -72,9 +80,14 @@ class Logger():
 
     def init_testing_log(self, datetime, path, stage, load_episode):
         file_log = open(os.path.join(path, "_test_stage" + stage + "_eps" + str(load_episode) + "_" + datetime + '.txt'), 'w+')
-        file_log.write(f"episode, outcome, step, episode_duration, distance, success/cw/co/timeout/tumble\n")
+        file_log.write(f"episode, outcome, step, reward_sum, episode_duration, distance, success/cw/co/timeout/tumble\n")
         return file_log
 
+    def init_speed_log(self, datetime, path, stage, load_episode):
+        file_log = open(os.path.join(path, "_test_stage" + stage + "_eps" + str(load_episode) + "_speed_" + datetime + '.txt'), 'w+')
+        file_log.write(f"step, speed_x, speed_y, speed_yaw\n")
+        return file_log
+    
     def init_comparison_file(self, datetime, path, stage, hyperparameters, algorithm, session, episode):
         prefix = "_training" if self.is_training else "_testing"
         with open(os.path.join(path, "__" + algorithm + prefix + "_comparison.txt"), 'a+') as file_comparison:
