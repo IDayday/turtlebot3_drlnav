@@ -76,7 +76,7 @@ class DrlAgent(Node):
         # ===================================================================== #
         #                             Model loading                             #
         # ===================================================================== #
-        self.model.actor.load_state_dict(torch.load("/home/mi/turtlebot3_drlnav/src/cyberdog_drl/model/mi-desktop/ddpg_1_stage_4/actor_stage4_episode2500.pt",map_location="cuda"))
+        self.model.actor.load_state_dict(torch.load("/home/mi/turtlebot3_drlnav/src/cyberdog_drl/model/mi-desktop/ddpg_1_stage_4/baseline_actor_stage4_episode3200.pt",map_location="cuda"))
 
 
         # self.sm = StorageManager(self.algorithm, self.load_session, self.episode, self.device, util.stage)
@@ -144,7 +144,8 @@ class DrlAgent(Node):
                     action = self.model.get_action(state, self.training, step, ENABLE_VISUAL)  # x[-1,1]
                 action_env = copy.deepcopy(action)
                 action_env[0] = action_env[0]*(1.1/2) + (-0.1 + 1.0)/2                         # x[-0.1,1.0]
-                action_env[1] = action_env[1]*(0.2/2)                                          # y[-0.1,0.1]
+                # action_env[1] = action_env[1]*(0.2/2)                                          # y[-0.1,0.1]
+                action_env[1] = 0.0
                 action_current = action_env
                 if self.algorithm == 'dqn':
                     action_current = self.model.possible_actions[action]

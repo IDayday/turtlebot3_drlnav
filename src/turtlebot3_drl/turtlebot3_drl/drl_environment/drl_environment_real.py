@@ -222,6 +222,20 @@ class DRLEnvironment(Node):
     def step_comm_callback(self, request, response):
         if len(request.action) == 0:
             return self.initalize_episode(response)
+        # MODIFY SPEED MAX
+        # if self.goal_distance >= 5:
+        #     REAL_SPEED_LINEAR_MAX = 1.5
+        # else:
+        #     REAL_SPEED_LINEAR_MAX = 0.059*(self.goal_distance - 0.9)**2 + 0.5
+        if self.goal_distance >= 3:
+            REAL_SPEED_LINEAR_MAX = 1.5
+        else:
+            REAL_SPEED_LINEAR_MAX = 1
+
+        if self.goal_distance > 3:
+            REAL_SPEED_ANGULAR_MAX = 0.9
+        else:
+            REAL_SPEED_ANGULAR_MAX = 0.5
 
         # Unnormalize actions
         if ENABLE_BACKWARD:

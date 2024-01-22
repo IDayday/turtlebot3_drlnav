@@ -47,12 +47,12 @@ REAL_N_SCAN_SAMPLES         = 360    # LiDAR density count your robot is providi
 REAL_ARENA_LENGTH           = 16   # meters
 REAL_ARENA_WIDTH            = 16   # meters
 REAL_SPEED_LINEAR_MAX       = 1.5  # in m/s
-REAL_SPEED_ANGULAR_MAX      = 0.8   # in rad/s
+REAL_SPEED_ANGULAR_MAX      = 0.90   # in rad/s
 
 REAL_LIDAR_CORRECTION       = 0.0  # meters, subtracted from the real LiDAR values 激光雷达盲区？修正值？
 REAL_LIDAR_DISTANCE_CAP     = 3.5   # meters, scan distances are capped this value
-REAL_THRESHOLD_COLLISION    = 0.30  # meters, minimum distance to an object that counts as a collision
-REAL_THRESHOLD_GOAL         = 0.50  # meters, minimum distance to goal that counts as reaching the goal
+REAL_THRESHOLD_COLLISION    = 0.20  # meters, minimum distance to an object that counts as a collision
+REAL_THRESHOLD_GOAL         = 0.90  # meters, minimum distance to goal that counts as reaching the goal
 
 
 # ===================================================================== #
