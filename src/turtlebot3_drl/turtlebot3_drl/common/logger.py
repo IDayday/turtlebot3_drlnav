@@ -32,7 +32,7 @@ class Logger():
         else:
             self.file_log = self.init_testing_log(datetime, session_dir, stage, load_episode)
 
-    def update_test_results(self, step, outcome, distance_traveled, episode_duration, swerving_sum, reward_sum, action_list):
+    def update_test_results(self, step, outcome, distance_traveled, episode_duration, swerving_sum, reward_sum, action_list, robot_pose_list, goal_pose_list):
         self.test_entry += 1
         self.test_outcome[outcome] += 1
         if outcome == SUCCESS:
@@ -65,10 +65,10 @@ class Logger():
                       f"duration: {sum(self.test_duration)/success_count:.3f}")
         # log speed
         datetime = time.strftime("%Y%m%d-%H%M%S")
-        speed_log = self.init_speed_log(datetime, self.session_dir, self.stage, self.load_episode)
+        speed_and_pose_log = self.init_speed_log(datetime, self.session_dir, self.stage, self.load_episode)
         length = len(action_list)
         for i in range(length):
-            speed_log.write(f"{i+1}, {action_list[i][0]}, {action_list[i][1]}, {action_list[i][2]}\n")
+            speed_and_pose_log.write(f"{i+1}, {action_list[i][0]}, {action_list[i][1]}, {action_list[i][2]}, {robot_pose_list[i][0]}, {robot_pose_list[i][1]}, {goal_pose_list[i][0]}, {goal_pose_list[i][1]}\n")
 
 
     def init_training_log(self, datetime, path, stage, model_config):
@@ -85,7 +85,7 @@ class Logger():
 
     def init_speed_log(self, datetime, path, stage, load_episode):
         file_log = open(os.path.join(path, "_test_stage" + stage + "_eps" + str(load_episode) + "_speed_" + datetime + '.txt'), 'w+')
-        file_log.write(f"step, speed_x, speed_y, speed_yaw\n")
+        file_log.write(f"step, speed_x, speed_y, speed_yaw, robot_pose_x, robot_pose_y, goal_pose_x, goal_pose_y\n")
         return file_log
     
     def init_comparison_file(self, datetime, path, stage, hyperparameters, algorithm, session, episode):

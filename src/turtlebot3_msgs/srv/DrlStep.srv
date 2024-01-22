@@ -6,3 +6,5 @@ float32 reward
 bool done
 uint32 success
 float32 distance_traveled
+float32[] robot_point
+float32[] goal_point

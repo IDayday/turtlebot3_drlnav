@@ -289,10 +289,12 @@ class DRLEnvironment(Node):
         response.reward = 0.0
         response.done = False
         response.distance_traveled = 0.0
+        response.robot_point = [0.0, 0.0]
+        response.goal_point = [0.0, 0.0]
         rw.reward_initalize(self.initial_distance_to_goal)
         return response
 
-    # TODO: 修改速度相关
+    # TODO: 交互函数 step
     def step_comm_callback(self, request, response):
         if len(request.action) == 0:
             return self.initalize_episode(response)
@@ -332,6 +334,8 @@ class DRLEnvironment(Node):
         response.done = self.done
         response.success = self.succeed
         response.distance_traveled = 0.0
+        response.robot_point = [self.robot_x, self.robot_y]
+        response.goal_point = [self.goal_x, self.goal_y]
         if self.done:
             response.distance_traveled = self.total_distance
             # Reset variables

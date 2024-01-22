@@ -132,6 +132,8 @@ class DrlAgent(Node):
             action_past = [0.0, 0.0, 0.0]
             state = util.init_episode(self)
             action_list = []
+            robot_pose_list = []
+            goal_pose_list = []
 
             if ENABLE_STACKING:
                 frame_buffer = [0.0] * (self.model.state_size * self.model.stack_depth * self.model.frame_skip)
@@ -171,12 +173,14 @@ class DrlAgent(Node):
                         action_current = self.model.possible_actions[action]
 
                 # Take a step
-                next_state, reward, episode_done, outcome, distance_traveled = util.step(self, action_current, action_past)
+                next_state, reward, episode_done, outcome, distance_traveled, robot_pose, goal_pose = util.step(self, action_current, action_past)
                 action_past = copy.deepcopy(action_current)
                 reward_sum += reward
                 action_log = copy.deepcopy(action_current)
                 action_log[0] = action_log[0] * SPEED_LINEAR_MAX
                 action_list.append(action_log)
+                robot_pose_list.append(robot_pose)
+                goal_pose_list.append(goal_pose)
 
                 if ENABLE_STACKING:
                     frame_buffer = frame_buffer[self.model.state_size:] + list(next_state)      # Update big buffer with single step
@@ -208,10 +212,10 @@ class DrlAgent(Node):
             self.total_steps += step
             duration = time.perf_counter() - episode_start
 
-            self.finish_episode(step, duration, outcome, distance_traveled, reward_sum, loss_critic, loss_actor, action_list)
+            self.finish_episode(step, duration, outcome, distance_traveled, reward_sum, loss_critic, loss_actor, action_list, robot_pose_list, goal_pose_list)
             episode += 1
 
-    def finish_episode(self, step, eps_duration, outcome, dist_traveled, reward_sum, loss_critic, lost_actor, action_list):
+    def finish_episode(self, step, eps_duration, outcome, dist_traveled, reward_sum, loss_critic, lost_actor, action_list, robot_pose_list, goal_pose_list):
             if self.total_steps < self.observe_steps:
                 print(f"Observe phase: {self.total_steps}/{self.observe_steps} steps")
                 return
@@ -221,7 +225,7 @@ class DrlAgent(Node):
             print(f"steps: {step:<6}steps_total: {self.total_steps:<7}time: {eps_duration:<6.2f}dist_traveled: {dist_traveled:<6.2f}")
 
             if (not self.training):
-                self.logger.update_test_results(step, outcome, dist_traveled, eps_duration, 0, reward_sum, action_list)
+                self.logger.update_test_results(step, outcome, dist_traveled, eps_duration, 0, reward_sum, action_list, robot_pose_list, goal_pose_list)
                 return
 
             self.graph.update_data(step, self.total_steps, outcome, reward_sum, loss_critic, lost_actor)
