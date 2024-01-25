@@ -63,7 +63,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--agent_name",           default="cyberdog_drl", type=str)
-    parser.add_argument("--file_path",            default="dayday-pc/ddpg_888_stage_4", type=str)
+    parser.add_argument("--file_path",            default="dayday-pc/ddpg_model_4000", type=str)
     args = parser.parse_args()
     print(args)
     main(args)

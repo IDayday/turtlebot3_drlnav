@@ -17,7 +17,8 @@ class StorageManager:
         if 'examples' in load_session:
             self.machine_dir = (os.getenv('DRLNAV_BASE_PATH') + '/src/cyberdog_drl/model/')
         self.name = name
-        self.stage = load_session[-1] if load_session else stage
+        # self.stage = load_session[-1] if load_session else stage
+        self.stage = 4
         self.session = load_session
         self.load_episode = load_episode
         self.session_dir = os.path.join(self.machine_dir, self.session)

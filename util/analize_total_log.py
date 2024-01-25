@@ -30,10 +30,12 @@ def statistics(data, condition):
     con_3 = np.where(np.array(condition[80:])==1)
     con_t = np.where(np.array(condition)==1)
 
-    d_1 = np.mean(task_1[con_1])
-    d_2 = np.mean(task_2[con_2])
-    d_3 = np.mean(task_3[con_3])
-    d_t = np.mean(task_t[con_t])
+    d_1 = np.mean(task_1[con_1] if task_1[con_1].size != 0 else [0])
+    d_2 = np.mean(task_2[con_2] if task_2[con_2].size != 0 else [0])
+    d_3 = np.mean(task_3[con_3] if task_3[con_3].size != 0 else [0])
+    d_t = np.mean(task_t[con_t] if task_t[con_t].size != 0 else [0])
+
+
 
     return [d_1,d_2,d_3,d_t]
 
@@ -48,9 +50,9 @@ def data_plot(data, title, save_pth):
     x_label=['task_level_1','task_level_2','task_level_3','total']
 
 
-    plt.bar(x, data[0],  width=0.3, alpha=0.5, label='model_1')
-    plt.bar([i+0.3 for i in x], data[1],  width=0.3, alpha=0.5, label='model_2')
-    plt.bar([i+0.3*2 for i in x], data[2],  width=0.3, alpha=0.5, label='model_3')
+    plt.bar(x, data[0],  width=0.3, alpha=0.5, label='model_2700')
+    plt.bar([i+0.3 for i in x], data[1],  width=0.3, alpha=0.5, label='model_3200')
+    plt.bar([i+0.3*2 for i in x], data[2],  width=0.3, alpha=0.5, label='model_4000')
     plt.title(title, fontsize=20)
     plt.xticks([i+0.3 for i in x], x_label, size=15)
     plt.yticks(size=20)
@@ -102,6 +104,7 @@ def main(args):
         # avg_reward_sum.append([r_1, r_2, r_3, r_t])
 
         eval_reward_sum = statistics(reward_sum, outcome)
+        eval_reward_sum[-1] = eval_reward_sum[0]*0.2 + eval_reward_sum[1]*0.3 + eval_reward_sum[2]*0.5
         eval_episode_duration = statistics(episode_duration, outcome)
         eval_distance = statistics(distance, outcome)
         avg_reward_sum.append(eval_reward_sum)
