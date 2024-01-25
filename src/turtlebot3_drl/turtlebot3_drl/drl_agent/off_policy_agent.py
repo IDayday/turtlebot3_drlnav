@@ -16,11 +16,13 @@
 
 from abc import ABC, abstractmethod
 import torch
-import torch.nn.functional as torchf
+import torch.nn as nn
 
 from turtlebot3_drl.drl_environment.reward import REWARD_FUNCTION
 from ..common.settings import ENABLE_BACKWARD, ENABLE_STACKING, ACTION_SIZE, HIDDEN_SIZE, BATCH_SIZE, BUFFER_SIZE, DISCOUNT_FACTOR, \
-                                 LEARNING_RATE, TAU, STEP_TIME, EPSILON_DECAY, EPSILON_MINIMUM, STACK_DEPTH, FRAME_SKIP
+                                 LEARNING_RATE, TAU, STEP_TIME, EPSILON_DECAY, EPSILON_MINIMUM, STACK_DEPTH, FRAME_SKIP, STATE_SIZE, \
+                                 ARENA_LENGTH, ARENA_WIDTH, SPEED_LINEAR_MAX, SPEED_ANGULAR_MAX, LIDAR_DISTANCE_CAP, THRESHOLD_COLLISION, \
+                                 THREHSOLD_GOAL, OBSTACLE_RADIUS, DIRECTION_SIZE, EXTRA_SIZE
 from ..drl_environment.drl_environment import NUM_SCAN_SAMPLES
 
 
@@ -32,7 +34,7 @@ class OffPolicyAgent(ABC):
 
         # Network structure
         # TODO: 网络参数：输入输出
-        self.state_size         = NUM_SCAN_SAMPLES + 5
+        self.state_size         = STATE_SIZE + EXTRA_SIZE
         self.action_size        = ACTION_SIZE
         self.hidden_size        = HIDDEN_SIZE
         self.input_size         = self.state_size
@@ -44,7 +46,7 @@ class OffPolicyAgent(ABC):
         self.tau                = TAU
         # Other parameters
         self.step_time          = STEP_TIME
-        self.loss_function      = torchf.smooth_l1_loss
+        self.loss_function      = nn.MSELoss()
         self.epsilon            = 1.0
         self.epsilon_decay      = EPSILON_DECAY
         self.epsilon_minimum    = EPSILON_MINIMUM
@@ -53,6 +55,15 @@ class OffPolicyAgent(ABC):
         self.stacking_enabled   = ENABLE_STACKING
         self.stack_depth        = STACK_DEPTH
         self.frame_skip         = FRAME_SKIP
+        # Env parameters
+        self.area_length        = ARENA_LENGTH
+        self.area_width         = ARENA_WIDTH
+        self.max_linear_speed   = SPEED_LINEAR_MAX
+        self.max_angular_speed  = SPEED_ANGULAR_MAX
+        self.lidar_distance_cap = LIDAR_DISTANCE_CAP
+        self.threshold_collision = THRESHOLD_COLLISION
+        self.threshold          = THREHSOLD_GOAL
+        self.obastacle_radius   = OBSTACLE_RADIUS
         if ENABLE_STACKING:
             self.input_size *= self.stack_depth
 

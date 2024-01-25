@@ -131,7 +131,6 @@ class DrlAgent(Node):
             # TODO: 修改动作
             action_past = [0.0, 0.0, 0.0]
             state = util.init_episode(self)
-            state = state[:-6] + state[-3:]
             action_list = []
             robot_pose_list = []
             goal_pose_list = []
@@ -167,8 +166,7 @@ class DrlAgent(Node):
                     else:
                         action = self.model.get_action(state, self.training, step, ENABLE_VISUAL)  # x[-1,1]
                     action_env[0] = action[0]*(1.1/2) + (-0.1 + 1.0)/2                             # x[-0.1,1.0]
-                    action_env[1] = action[1]*(0.2/2)
-                    action_env[2] = action[2]
+                    action_env[2] = action[1]
                     action_current = action_env
                     # print("action:", action_current)
                     if self.algorithm == 'dqn':
@@ -206,7 +204,6 @@ class DrlAgent(Node):
                 if ENABLE_VISUAL:
                     self.visual.update_reward(reward_sum)
                 state = copy.deepcopy(next_state)
-                state = state[:-6] + state[-3:]
                 step += 1
                 time.sleep(self.model.step_time)
 

@@ -27,8 +27,8 @@ TOPIC_SCAN = 'scan'
 TOPIC_VELO = 'cmd_vel'
 TOPIC_ODOM = 'odom_out'
 
-ARENA_LENGTH                = 16   # meters 地图大小/希望设置的目标范围大小
-ARENA_WIDTH                 = 16   # meters 地图大小
+ARENA_LENGTH                = 12   # meters 地图大小/希望设置的目标范围大小
+ARENA_WIDTH                 = 12   # meters 地图大小
 SPEED_LINEAR_MAX            = 1.5  # m/s 线速度最大值
 SPEED_ANGULAR_MAX           = 1.0   # rad/s 角速度最大值
 
@@ -64,7 +64,7 @@ REAL_THRESHOLD_GOAL         = 0.20  # meters, minimum distance to goal that coun
 # DRL parameters
 STATE_SIZE      = 360
 EXTRA_SIZE      = 8
-ACTION_SIZE     = 3         # Not used for DQN, see DQN_ACTION_SIZE 三个动作 x方向线速度，y方向线速度,z轴旋转角速度
+ACTION_SIZE     = 2         # Not used for DQN, see DQN_ACTION_SIZE 三个动作 x方向线速度，y方向线速度,z轴旋转角速度
 DIRECTION_SIZE  = 5
 HIDDEN_SIZE     = 512       # Number of neurons in hidden layers
 SEED            = 42
