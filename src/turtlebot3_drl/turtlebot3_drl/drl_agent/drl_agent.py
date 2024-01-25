@@ -212,10 +212,10 @@ class DrlAgent(Node):
             self.total_steps += step
             duration = time.perf_counter() - episode_start
 
-            self.finish_episode(step, duration, outcome, distance_traveled, reward_sum, loss_critic, loss_actor, action_list, robot_pose_list, goal_pose_list)
+            self.finish_episode(step, duration, outcome, distance_traveled, reward_sum, loss_critic, loss_actor, action_list, robot_pose_list, goal_pose_list, episode)
             episode += 1
 
-    def finish_episode(self, step, eps_duration, outcome, dist_traveled, reward_sum, loss_critic, lost_actor, action_list, robot_pose_list, goal_pose_list):
+    def finish_episode(self, step, eps_duration, outcome, dist_traveled, reward_sum, loss_critic, lost_actor, action_list, robot_pose_list, goal_pose_list, episode):
             if self.total_steps < self.observe_steps:
                 print(f"Observe phase: {self.total_steps}/{self.observe_steps} steps")
                 return
@@ -225,7 +225,7 @@ class DrlAgent(Node):
             print(f"steps: {step:<6}steps_total: {self.total_steps:<7}time: {eps_duration:<6.2f}dist_traveled: {dist_traveled:<6.2f}")
 
             if (not self.training):
-                self.logger.update_test_results(step, outcome, dist_traveled, eps_duration, 0, reward_sum, action_list, robot_pose_list, goal_pose_list)
+                self.logger.update_test_results(step, outcome, dist_traveled, eps_duration, 0, reward_sum, action_list, robot_pose_list, goal_pose_list, episode)
                 return
 
             self.graph.update_data(step, self.total_steps, outcome, reward_sum, loss_critic, lost_actor)

@@ -32,7 +32,7 @@ class Logger():
         else:
             self.file_log = self.init_testing_log(datetime, session_dir, stage, load_episode)
 
-    def update_test_results(self, step, outcome, distance_traveled, episode_duration, swerving_sum, reward_sum, action_list, robot_pose_list, goal_pose_list):
+    def update_test_results(self, step, outcome, distance_traveled, episode_duration, swerving_sum, reward_sum, action_list, robot_pose_list, goal_pose_list, episode_num):
         self.test_entry += 1
         self.test_outcome[outcome] += 1
         if outcome == SUCCESS:
@@ -42,17 +42,17 @@ class Logger():
         success_count = self.test_outcome[SUCCESS]
 
         self.file_log.write(f"{self.test_entry}, {outcome}, {step}, {reward_sum}, {episode_duration}, {distance_traveled}, {self.test_outcome[SUCCESS]}/{self.test_outcome[COLLISION_WALL]}/{self.test_outcome[COLLISION_OBSTACLE]}/{self.test_outcome[TIMEOUT]}/{self.test_outcome[TUMBLE]}\n")
-        if self.test_entry > 0 and self.test_entry % 40 == 0:
-            self.update_comparison_file(self.test_entry, self.test_outcome[SUCCESS] / (self.test_entry / 100), 0)
-            self.file_log.write(f"Successes: {self.test_outcome[SUCCESS]} ({self.test_outcome[SUCCESS]/self.test_entry:.2%}), "
-            f"collision (wall): {self.test_outcome[COLLISION_WALL]} ({self.test_outcome[COLLISION_WALL]/self.test_entry:.2%}), "
-            f"collision (obs): {self.test_outcome[COLLISION_OBSTACLE]} ({self.test_outcome[COLLISION_OBSTACLE]/self.test_entry:.2%}), "
-            f"timeouts: {self.test_outcome[TIMEOUT]}, ({self.test_outcome[TIMEOUT]/self.test_entry:.2%}), "
-            f"tumbles: {self.test_outcome[TUMBLE]}, ({self.test_outcome[TUMBLE]/self.test_entry:.2%}), ")
-            if success_count > 0:
-                self.file_log.write(f"distance: {sum(self.test_distance)/success_count:.3f}, "
-                                    f"swerving: {sum(self.test_swerving)/success_count:.3f}, "
-                                    f"duration: {sum(self.test_duration)/success_count:.3f}\n")
+        # if self.test_entry > 0 and self.test_entry % 40 == 0:
+        #     self.update_comparison_file(self.test_entry, self.test_outcome[SUCCESS] / (self.test_entry / 100), 0)
+        #     self.file_log.write(f"Successes: {self.test_outcome[SUCCESS]} ({self.test_outcome[SUCCESS]/self.test_entry:.2%}), "
+        #     f"collision (wall): {self.test_outcome[COLLISION_WALL]} ({self.test_outcome[COLLISION_WALL]/self.test_entry:.2%}), "
+        #     f"collision (obs): {self.test_outcome[COLLISION_OBSTACLE]} ({self.test_outcome[COLLISION_OBSTACLE]/self.test_entry:.2%}), "
+        #     f"timeouts: {self.test_outcome[TIMEOUT]}, ({self.test_outcome[TIMEOUT]/self.test_entry:.2%}), "
+        #     f"tumbles: {self.test_outcome[TUMBLE]}, ({self.test_outcome[TUMBLE]/self.test_entry:.2%}), ")
+        #     if success_count > 0:
+        #         self.file_log.write(f"distance: {sum(self.test_distance)/success_count:.3f}, "
+        #                             f"swerving: {sum(self.test_swerving)/success_count:.3f}, "
+        #                             f"duration: {sum(self.test_duration)/success_count:.3f}\n")
         if self.test_entry > 0:
             print(f"Successes: {self.test_outcome[SUCCESS]} ({self.test_outcome[SUCCESS]/self.test_entry:.2%}), "
             f"collision (wall): {self.test_outcome[COLLISION_WALL]} ({self.test_outcome[COLLISION_WALL]/self.test_entry:.2%}), "
@@ -64,8 +64,9 @@ class Logger():
                       f"swerving: {sum(self.test_swerving)/success_count:.3f}, "
                       f"duration: {sum(self.test_duration)/success_count:.3f}")
         # log speed
-        datetime = time.strftime("%Y%m%d-%H%M%S")
-        speed_and_pose_log = self.init_speed_log(datetime, self.session_dir, self.stage, self.load_episode)
+        task_level = (episode_num//40)+1
+        episode = episode_num + 1
+        speed_and_pose_log = self.init_speed_log(episode, self.session_dir, self.stage, self.load_episode, task_level)
         length = len(action_list)
         for i in range(length):
             speed_and_pose_log.write(f"{i+1}, {action_list[i][0]}, {action_list[i][1]}, {action_list[i][2]}, {robot_pose_list[i][0]}, {robot_pose_list[i][1]}, {goal_pose_list[i][0]}, {goal_pose_list[i][1]}\n")
@@ -79,12 +80,12 @@ class Logger():
         return file_log
 
     def init_testing_log(self, datetime, path, stage, load_episode):
-        file_log = open(os.path.join(path, "_test_stage" + stage + "_eps" + str(load_episode) + "_" + datetime + '.txt'), 'w+')
+        file_log = open(os.path.join(path, "_test_stage" + stage + "_eps" + str(load_episode) + "_total_log" + '.txt'), 'w+')
         file_log.write(f"episode, outcome, step, reward_sum, episode_duration, distance, success/cw/co/timeout/tumble\n")
         return file_log
 
-    def init_speed_log(self, datetime, path, stage, load_episode):
-        file_log = open(os.path.join(path, "_test_stage" + stage + "_eps" + str(load_episode) + "_speed_" + datetime + '.txt'), 'w+')
+    def init_speed_log(self, episode, path, stage, load_episode, task_level):
+        file_log = open(os.path.join(path, "_test_"  + "eps" + str(load_episode) + f"_task_level{task_level}" + "_speed_" + str(episode) + '.txt'), 'w+')
         file_log.write(f"step, speed_x, speed_y, speed_yaw, robot_pose_x, robot_pose_y, goal_pose_x, goal_pose_y\n")
         return file_log
     

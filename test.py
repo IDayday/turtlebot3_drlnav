@@ -22,16 +22,25 @@ import itertools
 # print(a)
 
 
-buffer = deque(maxlen=100)
-a = np.arange(0,10)
-b = np.arange(11,21)
-for i in range(10):
-    buffer.append((a[i],b[i]))
-print(buffer)
-length = len(buffer)
-c = list(itertools.islice(buffer, length-3, length))
-d = random.sample(buffer,3)
-d.extend(c)
-x = np.float32([array[0] for array in d])
+# buffer = deque(maxlen=100)
+# a = np.arange(0,10)
+# b = np.arange(11,21)
+# for i in range(10):
+#     buffer.append((a[i],b[i]))
+# print(buffer)
+# length = len(buffer)
+# c = list(itertools.islice(buffer, length-3, length))
+# d = random.sample(buffer,3)
+# d.extend(c)
+# x = np.float32([array[0] for array in d])
+# print(d)
+# print(x)
+
+a = [1,1,1,2,2,1,1]
+b = ['a','b','c','1','2','3','5']
+
+c = np.where(np.array(a)==1)
+d = np.array(b)[c]
+print(c)
 print(d)
-print(x)
+print(max(a))
